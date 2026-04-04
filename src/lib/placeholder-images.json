@@ -1,3 +1,52 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "login-hero",
+      "description": "A worker in a modern industrial setting.",
+      "imageUrl": "https://picsum.photos/seed/login-hero/1200/1800",
+      "imageHint": "industrial worker"
+    },
+    {
+      "id": "job-plumber",
+      "description": "A plumber fixing a sink.",
+      "imageUrl": "https://picsum.photos/seed/job-plumber/600/400",
+      "imageHint": "plumber work"
+    },
+    {
+      "id": "job-electrician",
+      "description": "An electrician working on a circuit board.",
+      "imageUrl": "https://picsum.photos/seed/job-electrician/600/400",
+      "imageHint": "electrician work"
+    },
+    {
+      "id": "job-carpenter",
+      "description": "A carpenter measuring wood.",
+      "imageUrl": "https://picsum.photos/seed/job-carpenter/600/400",
+      "imageHint": "carpenter wood"
+    },
+    {
+      "id": "job-welder",
+      "description": "A welder with a torch.",
+      "imageUrl": "https://picsum.photos/seed/job-welder/600/400",
+      "imageHint": "welder metal"
+    },
+    {
+      "id": "job-mechanic",
+      "description": "A mechanic working on a car engine.",
+      "imageUrl": "https://picsum.photos/seed/job-mechanic/600/400",
+      "imageHint": "mechanic car"
+    },
+    {
+      "id": "job-painter",
+      "description": "A painter painting a wall.",
+      "imageUrl": "https://picsum.photos/seed/job-painter/600/400",
+      "imageHint": "painter wall"
+    },
+    {
+      "id": "user-avatar-1",
+      "description": "A portrait of a smiling person.",
+      "imageUrl": "https://picsum.photos/seed/user-avatar-1/200/200",
+      "imageHint": "person portrait"
+    }
+  ]
 }

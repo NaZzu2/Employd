@@ -2,20 +2,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { LoginForm } from '@/components/auth/login-form';
+import { SignupForm } from '@/components/auth/signup-form';
 import { Logo } from '@/components/icons';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Button } from '@/components/ui/button';
 
-export default function LoginPage() {
+export default function SignupPage() {
   const loginImage = PlaceHolderImages.find((p) => p.id === 'login-hero');
 
-  async function login() {
-    'use server';
-    redirect('/dashboard');
-  }
-  
-  async function loginAsGuest() {
+  async function signup() {
     'use server';
     redirect('/dashboard');
   }
@@ -30,29 +24,14 @@ export default function LoginPage() {
               <h1 className="text-3xl font-bold font-headline">ShiftFinder</h1>
             </div>
             <p className="text-balance text-muted-foreground">
-              Login to find your next opportunity
+              Create an account to start finding jobs
             </p>
           </div>
-          <LoginForm loginAction={login} />
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-           <form action={loginAsGuest}>
-            <Button variant="outline" className="w-full">
-              Sign in as Guest
-            </Button>
-          </form>
+          <SignupForm signupAction={signup} />
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
-            <Link href="/signup" className="underline font-semibold">
-              Sign up
+            Already have an account?{' '}
+            <Link href="/" className="underline font-semibold">
+              Log in
             </Link>
           </div>
         </div>
@@ -66,7 +45,6 @@ export default function LoginPage() {
             width="1200"
             height="1800"
             className="h-screen w-full object-cover dark:brightness-[0.3]"
-            priority
           />
         )}
       </div>
