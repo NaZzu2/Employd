@@ -1,24 +1,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-
 import { LoginForm } from '@/components/auth/login-form';
 import { Logo } from '@/components/icons';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Button } from '@/components/ui/button';
 
 export default function LoginPage() {
   const loginImage = PlaceHolderImages.find((p) => p.id === 'login-hero');
-
-  async function login() {
-    'use server';
-    redirect('/dashboard');
-  }
-  
-  async function loginAsGuest() {
-    'use server';
-    redirect('/dashboard');
-  }
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
@@ -27,28 +14,13 @@ export default function LoginPage() {
           <div className="grid gap-2 text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Logo className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold font-headline">ShiftFinder</h1>
+              <h1 className="text-3xl font-bold font-headline">Employ&apos;d</h1>
             </div>
             <p className="text-balance text-muted-foreground">
               Login to find your next opportunity
             </p>
           </div>
-          <LoginForm loginAction={login} />
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-           <form action={loginAsGuest}>
-            <Button variant="outline" className="w-full">
-              Sign in as Guest
-            </Button>
-          </form>
+          <LoginForm />
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline font-semibold">
@@ -63,8 +35,8 @@ export default function LoginPage() {
             src={loginImage.imageUrl}
             alt={loginImage.description}
             data-ai-hint={loginImage.imageHint}
-            width="1200"
-            height="1800"
+            width={1200}
+            height={1800}
             className="h-screen w-full object-cover dark:brightness-[0.3]"
             priority
           />

@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -15,6 +18,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -23,21 +28,31 @@ const formSchema = z.object({
 
 type LoginFormValues = z.infer<typeof formSchema>;
 
-type LoginFormProps = {
-  loginAction: (values: LoginFormValues) => Promise<void>;
-};
+export function LoginForm() {
+  const { signIn } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
 
-export function LoginForm({ loginAction }: LoginFormProps) {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+    defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = async (values: LoginFormValues) => {
-    await loginAction(values);
+    setLoading(true);
+    try {
+      const role = await signIn(values.email, values.password);
+      router.push(role === 'employer' ? '/dashboard' : '/worker');
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Login failed',
+        description: err.message ?? 'Invalid email or password.',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,11 +65,7 @@ export function LoginForm({ loginAction }: LoginFormProps) {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="m@example.com"
-                  autoComplete="email"
-                  {...field}
-                />
+                <Input placeholder="you@example.com" autoComplete="email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -67,10 +78,7 @@ export function LoginForm({ loginAction }: LoginFormProps) {
             <FormItem>
               <div className="flex items-center">
                 <FormLabel>Password</FormLabel>
-                <Link
-                  href="#"
-                  className="ml-auto inline-block text-sm underline"
-                >
+                <Link href="#" className="ml-auto inline-block text-sm underline">
                   Forgot your password?
                 </Link>
               </div>
@@ -81,7 +89,8 @@ export function LoginForm({ loginAction }: LoginFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Login
         </Button>
       </form>

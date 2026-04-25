@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { AuthProvider } from '@/lib/auth-context';
 
 export const metadata: Metadata = {
-  title: 'ShiftFinder',
-  description: 'The easiest way to find your next shift.',
+  title: "Employ'd — Find Your Next Opportunity",
+  description: 'The marketplace connecting skilled workers with employers.',
 };
 
 export default function RootLayout({
@@ -30,8 +31,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <Toaster />
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

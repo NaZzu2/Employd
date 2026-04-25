@@ -1,18 +1,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-
 import { SignupForm } from '@/components/auth/signup-form';
 import { Logo } from '@/components/icons';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function SignupPage() {
   const loginImage = PlaceHolderImages.find((p) => p.id === 'login-hero');
-
-  async function signup() {
-    'use server';
-    redirect('/dashboard');
-  }
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
@@ -21,13 +14,13 @@ export default function SignupPage() {
           <div className="grid gap-2 text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Logo className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold font-headline">ShiftFinder</h1>
+              <h1 className="text-3xl font-bold font-headline">Employ&apos;d</h1>
             </div>
             <p className="text-balance text-muted-foreground">
-              Create an account to start finding jobs
+              Create an account to get started
             </p>
           </div>
-          <SignupForm signupAction={signup} />
+          <SignupForm />
           <div className="mt-4 text-center text-sm">
             Already have an account?{' '}
             <Link href="/" className="underline font-semibold">
@@ -42,8 +35,8 @@ export default function SignupPage() {
             src={loginImage.imageUrl}
             alt={loginImage.description}
             data-ai-hint={loginImage.imageHint}
-            width="1200"
-            height="1800"
+            width={1200}
+            height={1800}
             className="h-screen w-full object-cover dark:brightness-[0.3]"
           />
         )}
