@@ -16,7 +16,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, hasValidConfig } from '@/lib/firebase';
 import type { UserDoc, UserRole, SubscriptionTier } from '@/lib/types';
 import { EMPTY_BADGE_COUNTS } from '@/lib/badge-config';
 
@@ -86,6 +86,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ── Sign In ────────────────────────────────────────────────────────────────
   const signIn = async (email: string, password: string): Promise<UserRole> => {
+    if (!hasValidConfig) {
+      // Demo Mode
+      const isEmployer = email.toLowerCase().includes('employer');
+      const role: UserRole = isEmployer ? 'employer' : 'worker';
+      
+      const demoUser = { uid: `demo-${role}-123`, email, displayName: `Demo ${role === 'employer' ? 'Employer' : 'Worker'}`, emailVerified: true } as User;
+      setFirebaseUser(demoUser);
+      
+      const now = new Date().toISOString();
+      const d: UserDoc = {
+        uid: demoUser.uid,
+        email,
+        displayName: demoUser.displayName!,
+        role,
+        subscriptionTier: 'free',
+        searchRadiusKm: 50,
+        badgeCounts: EMPTY_BADGE_COUNTS,
+        averageRating: 4.5,
+        reviewCount: 3,
+        monthlyThreadsStarted: 0,
+        monthlyThreadsResetAt: now,
+        createdAt: now,
+      };
+      setUserDoc(d);
+      return role;
+    }
+
     const credential = await signInWithEmailAndPassword(auth, email, password);
     const d = await fetchUserDoc(credential.user.uid);
     setUserDoc(d);
@@ -99,6 +126,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     displayName: string,
     role: UserRole,
   ): Promise<void> => {
+    if (!hasValidConfig) {
+      // Demo Mode
+      const demoUser = { uid: `demo-${role}-123`, email, displayName, emailVerified: true } as User;
+      setFirebaseUser(demoUser);
+
+      const now = new Date().toISOString();
+      const newUser: UserDoc = {
+        uid: demoUser.uid,
+        email,
+        displayName,
+        role,
+        subscriptionTier: 'free',
+        searchRadiusKm: 50,
+        badgeCounts: EMPTY_BADGE_COUNTS,
+        averageRating: 0,
+        reviewCount: 0,
+        monthlyThreadsStarted: 0,
+        monthlyThreadsResetAt: now,
+        createdAt: now,
+      };
+      setUserDoc(newUser);
+      return;
+    }
+
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(credential.user, { displayName });
 
@@ -156,7 +207,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ── Sign Out ──────────────────────────────────────────────────────────────
   const signOut = async (): Promise<void> => {
-    await firebaseSignOut(auth);
+    if (hasValidConfig) {
+      await firebaseSignOut(auth);
+    }
     setUserDoc(null);
     setFirebaseUser(null);
   };

@@ -49,5 +49,5 @@ if (hasValidConfig) {
   db = getFirestore(app);
 }
 
-export { auth, db };
+export { auth, db, hasValidConfig };
 export default app;
