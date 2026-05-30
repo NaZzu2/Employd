@@ -7,6 +7,9 @@ import { AuthProvider } from '@/lib/auth-context';
 export const metadata: Metadata = {
   title: "Employ'd — Find Your Next Opportunity",
   description: 'The marketplace connecting skilled workers with employers.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({

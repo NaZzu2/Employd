@@ -2,6 +2,9 @@ import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { SidebarProvider, SidebarInset, Sidebar } from "@/components/ui/sidebar";
 
+// Prevent static prerendering — all dashboard pages require Firebase Auth at runtime
+export const dynamic = 'force-dynamic';
+
 export default function DashboardLayout({
   children,
 }: {

@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   description: 'Find your next job opportunity.',
 };
 
+// Prevent static prerendering — worker pages require Firebase Auth at runtime
+export const dynamic = 'force-dynamic';
+
 export default function WorkerLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative min-h-screen bg-background">
