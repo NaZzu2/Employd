@@ -11,6 +11,14 @@ export const THREAD_LIMITS: Record<SubscriptionTier, number> = {
   enterprise: Infinity,
 };
 
+// Badge limit per review/interaction per subscription tier
+// On 'free', a reviewer can award at most 1 badge per review interaction.
+export const BADGE_LIMITS: Record<SubscriptionTier, number> = {
+  free: 1,
+  pro: 3,
+  enterprise: Infinity,
+};
+
 // ─── Geolocation ─────────────────────────────────────────────────────────────
 
 export type GeoLocation = {
@@ -118,6 +126,8 @@ export type Conversation = {
   lastMessage: string;
   lastMessageAt: string;
   createdAt: string;
+  lastMessageSenderId?: string;
+  lastMessageSeen?: boolean;
 };
 
 // ─── Message (Firestore: conversations/{id}/messages/{msgId}) ────────────────
@@ -129,6 +139,7 @@ export type Message = {
   senderName: string;
   text: string;
   createdAt: string;
+  seenAt?: string; // ISO timestamp set when the other party has read the message
 };
 
 // ─── Ping (Firestore: pings/{id}) ────────────────────────────────────────────
@@ -183,6 +194,7 @@ export type Review = {
   toUid: string;
   stars: StarRating;
   badge?: BadgeType; // optional
+  badges?: BadgeType[]; // optional list for pro/enterprise tiers
   comment?: string;
   contractId: string;
   createdAt: string;

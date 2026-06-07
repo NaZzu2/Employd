@@ -38,11 +38,14 @@ import {
 } from '@/components/ui/dialog';
 import { WorkerCard } from '@/components/dashboard/worker-card';
 import { useAuth } from '@/lib/auth-context';
-import { getAllWorkerProfiles, startConversation, createContract } from '@/lib/firestore';
-import { isWithinRange, haversineDistanceKm, canStartThread } from '@/lib/utils';
+import { getAllWorkerProfiles, getOrCreateConversation, createContract, findExistingConversation } from '@/lib/firestore';
+import { isWithinRange, haversineDistanceKm, canStartThread, threadsRemaining } from '@/lib/utils';
 import type { WorkerProfile } from '@/lib/types';
+import { THREAD_LIMITS } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { UpgradePrompt } from '@/components/shared/upgrade-prompt';
+import { useEffect } from 'react';
 
 type SortMode = 'available' | 'rating' | 'badges';
 
@@ -93,6 +96,37 @@ const MOCK_WORKERS: WorkerProfile[] = [
     education: [],
     updatedAt: new Date().toISOString(),
   },
+  // Finnish test users (suomi)
+  {
+    uid: 'fi-1',
+    displayName: 'Mikko Virtanen',
+    title: 'Kirvesmies',
+    summary: 'Ammattitaitoinen kirvesmies, erikoistunut huoneistoremontteihin ja viimeistelytöihin.',
+    skills: ['Sisätyöt', 'Kalusteasennus', 'Viimeistely', 'Mittatyöt'],
+    isLookingForWork: true,
+    averageRating: 4.8,
+    reviewCount: 9,
+    badgeCounts: { punctual: 4, reliable: 6, quality: 5, professional: 2, goes_above: 1 },
+    location: { lat: 60.1699, lng: 24.9384, address: 'Helsinki, Suomi' },
+    experience: [],
+    education: [],
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'fi-2',
+    displayName: 'Laura Laine',
+    title: 'Sähköasentaja',
+    summary: 'Sertifioitu sähköasentaja, kokemus teollisuus- ja talotekniikkatöistä.',
+    skills: ['Sähköasennus', 'Vianetsintä', 'Aurinkosähkö', 'Turvallisuus'],
+    isLookingForWork: true,
+    averageRating: 4.9,
+    reviewCount: 5,
+    badgeCounts: { punctual: 3, reliable: 4, quality: 3, professional: 3, goes_above: 0 },
+    location: { lat: 61.9241, lng: 25.7482, address: 'Suomi' },
+    experience: [],
+    education: [],
+    updatedAt: new Date().toISOString(),
+  },
 ];
 
 export default function WorkerBoardPage() {
@@ -100,7 +134,8 @@ export default function WorkerBoardPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [workers] = useState<WorkerProfile[]>(MOCK_WORKERS);
+  const [workers, setWorkers] = useState<WorkerProfile[]>(MOCK_WORKERS);
+  const [workersLoading, setWorkersLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortMode>('available');
   const [radius, setRadius] = useState(userDoc?.searchRadiusKm ?? 100);
@@ -109,6 +144,24 @@ export default function WorkerBoardPage() {
   // Hire dialog state
   const [hireTarget, setHireTarget] = useState<WorkerProfile | null>(null);
   const [hiring, setHiring] = useState(false);
+
+  // Message loading state — tracks which worker card button is loading
+  const [messagingWorkerId, setMessagingWorkerId] = useState<string | null>(null);
+
+  // Upgrade limit dialog state
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+
+  // Load workers from Firestore
+  useEffect(() => {
+    getAllWorkerProfiles()
+      .then((data) => {
+        if (data && data.length > 0) {
+          setWorkers(data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setWorkersLoading(false));
+  }, []);
 
   // ── Filter & sort ───────────────────────────────────────────────────────────
   const userLat = userDoc?.location?.lat;
@@ -151,19 +204,33 @@ export default function WorkerBoardPage() {
   // ── Conversation ────────────────────────────────────────────────────────────
   const handleStartConversation = async (worker: WorkerProfile) => {
     if (!userDoc) return;
-    if (!canStartThread(userDoc.subscriptionTier, userDoc.monthlyThreadsStarted)) {
-      toast({
-        variant: 'destructive',
-        title: 'Thread limit reached',
-        description: 'Upgrade your subscription to start more conversations this month.',
-      });
-      return;
-    }
+    setMessagingWorkerId(worker.uid);
     try {
-      const convId = await startConversation(userDoc, worker.uid, worker.displayName);
-      router.push(`/dashboard/messages/${convId}`);
+      const existing = await findExistingConversation(userDoc.uid, worker.uid);
+      if (!existing && !canStartThread(userDoc.subscriptionTier, userDoc.monthlyThreadsStarted)) {
+        setShowUpgradeDialog(true);
+        return;
+      }
+
+      const { conversationId, isNew } = await getOrCreateConversation(
+        userDoc,
+        worker.uid,
+        worker.displayName,
+      );
+      if (isNew) {
+        const remaining = threadsRemaining(userDoc.subscriptionTier, userDoc.monthlyThreadsStarted + 1);
+        const remainingText =
+          remaining === 'unlimited' ? '' : ` (${remaining} of ${THREAD_LIMITS[userDoc.subscriptionTier]} chats remaining this month)`;
+        toast({
+          title: 'Conversation started',
+          description: `Chat with ${worker.displayName} opened.${remainingText}`,
+        });
+      }
+      router.push(`/dashboard/messages/${conversationId}`);
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+      toast({ variant: 'destructive', title: 'Could not start conversation', description: err.message });
+    } finally {
+      setMessagingWorkerId(null);
     }
   };
 
@@ -315,6 +382,7 @@ export default function WorkerBoardPage() {
                 distanceKm={distanceTo(worker)}
                 onStartConversation={handleStartConversation}
                 onMarkHired={handleMarkHired}
+                messagingLoading={messagingWorkerId === worker.uid}
               />
             ))}
           </div>
@@ -339,6 +407,26 @@ export default function WorkerBoardPage() {
             <Button onClick={confirmHire} disabled={hiring}>
               {hiring ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirm Hire Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade limit dialog */}
+      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Monthly Chat Limit Reached</DialogTitle>
+            <DialogDescription>
+              You have used all of your monthly conversations on the Free plan. Upgrade your plan to start more chats with workers.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <UpgradePrompt reason="more_chats" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUpgradeDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

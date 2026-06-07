@@ -48,22 +48,41 @@ service cloud.firestore {
 
     // ── Conversations ────────────────────────────────────────────────────────
     match /conversations/{convId} {
-      allow read, update: if request.auth != null
+      // Both parties can read the conversation doc
+      allow read: if request.auth != null
         && (resource.data.employerId == request.auth.uid
             || resource.data.workerId == request.auth.uid);
-      // Only employers can create conversations
+      // Only the system (via server SDK / employer action) updates lastMessage etc.
+      allow update: if request.auth != null
+        && (resource.data.employerId == request.auth.uid
+            || resource.data.workerId == request.auth.uid);
+      // Only employers can START a new conversation
       allow create: if request.auth != null
-        && request.resource.data.employerId == request.auth.uid;
+        && request.resource.data.employerId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'employer';
+      // Workers cannot delete conversations
+      allow delete: if false;
 
       // Messages sub-collection
       match /messages/{msgId} {
+        // Either party in the conversation can read messages
         allow read: if request.auth != null
-          && get(/databases/$(database)/documents/conversations/$(convId)).data.employerId == request.auth.uid
-          || get(/databases/$(database)/documents/conversations/$(convId)).data.workerId == request.auth.uid;
+          && (get(/databases/$(database)/documents/conversations/$(convId)).data.employerId == request.auth.uid
+              || get(/databases/$(database)/documents/conversations/$(convId)).data.workerId == request.auth.uid);
+
+        // Either party can create a message (senderId must match caller)
         allow create: if request.auth != null
           && (get(/databases/$(database)/documents/conversations/$(convId)).data.employerId == request.auth.uid
               || get(/databases/$(database)/documents/conversations/$(convId)).data.workerId == request.auth.uid)
           && request.resource.data.senderId == request.auth.uid;
+
+        // Either party can update ONLY the seenAt field (read receipts).
+        // The updater must NOT be the original sender (you can't mark your own as seen).
+        allow update: if request.auth != null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seenAt'])
+          && resource.data.senderId != request.auth.uid
+          && (get(/databases/$(database)/documents/conversations/$(convId)).data.employerId == request.auth.uid
+              || get(/databases/$(database)/documents/conversations/$(convId)).data.workerId == request.auth.uid);
       }
     }
 

@@ -1,4 +1,4 @@
-import type { Job, UserProfile } from '@/lib/types';
+import type { Job, UserProfile, WorkerProfile, EmployerProfile } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const findImage = (id: string) => {
@@ -122,3 +122,40 @@ export const userProfile: UserProfile = {
         }
     ]
 };
+
+// Finnish mock users for local testing (in Finnish)
+export const FINNISH_WORKERS: WorkerProfile[] = [
+  {
+    uid: 'fi-worker-1',
+    displayName: 'Antti Korhonen',
+    avatarUrl: findImage('user-avatar-2').imageUrl,
+    title: 'Runkotyöntekijä',
+    location: { lat: 60.4518, lng: 22.2666, address: 'Turku, Suomi' },
+    summary: 'Kokenut rakennustyöntekijä, erikoistunut runko- ja elementtitöihin.',
+    skills: ['Runkotyöt', 'Elementtiasennus', 'Turvallisuus'],
+    isLookingForWork: true,
+    experience: [],
+    education: [],
+    averageRating: 4.6,
+    reviewCount: 7,
+    badgeCounts: { punctual: 2, reliable: 3, quality: 1, professional: 0, goes_above: 0 },
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+export const FINNISH_EMPLOYERS: EmployerProfile[] = [
+  {
+    uid: 'fi-employer-1',
+    displayName: 'Rakennus Oy Suomi',
+    avatarUrl: findImage('company-1').imageUrl,
+    companyName: 'Rakennus Oy Suomi',
+    industry: 'Rakentaminen',
+    location: { lat: 60.1699, lng: 24.9384, address: 'Helsinki, Suomi' },
+    description: 'Pieni rakennusyritys, joka etsii luotettavia alihankkijoita ja työntekijöitä.',
+    website: 'https://rakennus.fi',
+    averageRating: 4.3,
+    reviewCount: 12,
+    badgeCounts: { punctual: 5, reliable: 6, quality: 3, professional: 2, goes_above: 1 },
+    updatedAt: new Date().toISOString(),
+  },
+];

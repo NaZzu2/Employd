@@ -246,9 +246,13 @@ function ReviewCard({ review }: { review: Review }) {
                 />
               ))}
             </div>
-            {review.badge && (
+            {review.badges && review.badges.length > 0 ? (
+              review.badges.map((b) => (
+                <BadgeChip key={b} type={b as BadgeType} size="sm" />
+              ))
+            ) : review.badge ? (
               <BadgeChip type={review.badge as BadgeType} size="sm" />
-            )}
+            ) : null}
             <span className="text-xs text-muted-foreground ml-auto">
               {timeAgo(review.createdAt)}
             </span>

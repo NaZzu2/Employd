@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { MapPin, Briefcase, Star, Zap, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { MapPin, Briefcase, Star, Zap, MessageSquare, CheckCircle2, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ interface WorkerCardProps {
   distanceKm?: number;
   onStartConversation?: (worker: WorkerProfile) => void;
   onMarkHired?: (worker: WorkerProfile) => void;
+  messagingLoading?: boolean;
 }
 
 export function WorkerCard({
@@ -28,6 +29,7 @@ export function WorkerCard({
   distanceKm,
   onStartConversation,
   onMarkHired,
+  messagingLoading = false,
 }: WorkerCardProps) {
   return (
     <Card
@@ -106,9 +108,14 @@ export function WorkerCard({
           size="sm"
           className="flex-1"
           onClick={() => onStartConversation?.(worker)}
+          disabled={messagingLoading}
         >
-          <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-          Message
+          {messagingLoading ? (
+            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+          ) : (
+            <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+          )}
+          {messagingLoading ? 'Opening…' : 'Message'}
         </Button>
         <Button
           size="sm"

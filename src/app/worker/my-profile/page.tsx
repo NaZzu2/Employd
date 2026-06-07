@@ -17,6 +17,8 @@ import { WorkerProfileForm } from '@/components/worker/worker-profile-form';
 import { StarRatingDisplay } from '@/components/shared/star-rating';
 import { BadgeDisplay } from '@/components/shared/badge-display';
 import { useAuth } from '@/lib/auth-context';
+import { THREAD_LIMITS } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { EMPTY_BADGE_COUNTS } from '@/lib/badge-config';
 import type { WorkerProfile } from '@/lib/types';
 
@@ -95,6 +97,12 @@ export default function WorkerProfilePage() {
               </Badge>
             ) : (
               <Badge variant="secondary">Not looking right now</Badge>
+            )}
+            {/* Subscription badge (if available from auth) */}
+            {userDoc && (
+              <Badge className={cn('text-xs font-medium', userDoc.subscriptionTier === 'free' ? 'bg-muted' : 'bg-accent/10')}>
+                {userDoc.subscriptionTier.charAt(0).toUpperCase() + userDoc.subscriptionTier.slice(1)} Plan
+              </Badge>
             )}
           </div>
 

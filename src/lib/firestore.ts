@@ -14,6 +14,8 @@ import {
   increment,
   Timestamp,
   writeBatch,
+  onSnapshot,
+  type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type {
@@ -234,6 +236,43 @@ export async function startConversation(
   return ref.id;
 }
 
+/**
+ * Returns the existing conversation ID between employer and worker, or null.
+ * Used to avoid creating duplicate threads.
+ */
+export async function findExistingConversation(
+  employerId: string,
+  workerId: string,
+): Promise<string | null> {
+  const snap = await getDocs(
+    query(
+      collection(db, 'conversations'),
+      where('employerId', '==', employerId),
+      where('workerId', '==', workerId),
+      limit(1),
+    ),
+  );
+  if (snap.empty) return null;
+  return snap.docs[0].id;
+}
+
+/**
+ * Gets or creates a conversation. If one already exists, returns its ID without
+ * consuming a monthly thread slot.
+ */
+export async function getOrCreateConversation(
+  employer: UserDoc,
+  workerId: string,
+  workerName: string,
+  jobPostId?: string,
+  jobTitle?: string,
+): Promise<{ conversationId: string; isNew: boolean }> {
+  const existing = await findExistingConversation(employer.uid, workerId);
+  if (existing) return { conversationId: existing, isNew: false };
+  const conversationId = await startConversation(employer, workerId, workerName, jobPostId, jobTitle);
+  return { conversationId, isNew: true };
+}
+
 export async function getConversation(id: string): Promise<Conversation | null> {
   const snap = await getDoc(doc(db, 'conversations', id));
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Conversation) : null;
@@ -268,7 +307,32 @@ export async function sendMessage(
   await updateDoc(doc(db, 'conversations', conversationId), {
     lastMessage: message.text,
     lastMessageAt: now,
+    lastMessageSenderId: message.senderId,
+    lastMessageSeen: false,
   });
+
+  // Mark all unread messages sent by the other party as seen
+  try {
+    const unreadQuery = query(
+      collection(db, 'conversations', conversationId, 'messages'),
+      where('senderId', '!=', message.senderId)
+    );
+    const snap = await getDocs(unreadQuery);
+    const batch = writeBatch(db);
+    let hasUpdates = false;
+    snap.docs.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (!data.seenAt) {
+        batch.update(docSnap.ref, { seenAt: now });
+        hasUpdates = true;
+      }
+    });
+    if (hasUpdates) {
+      await batch.commit();
+    }
+  } catch (e) {
+    console.error('Error marking messages as seen in sendMessage:', e);
+  }
 }
 
 export async function getMessages(conversationId: string): Promise<Message[]> {
@@ -279,6 +343,36 @@ export async function getMessages(conversationId: string): Promise<Message[]> {
     ),
   );
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Message));
+}
+
+/** Real-time listener — calls onMessages each time messages change */
+export function subscribeToMessages(
+  conversationId: string,
+  onMessages: (messages: Message[]) => void,
+): Unsubscribe {
+  return onSnapshot(
+    query(
+      collection(db, 'conversations', conversationId, 'messages'),
+      orderBy('createdAt', 'asc'),
+    ),
+    (snap) => {
+      onMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Message)));
+    },
+  );
+}
+
+/** Mark a specific message as seen (sets seenAt timestamp) */
+export async function markMessageSeen(
+  conversationId: string,
+  messageId: string,
+): Promise<void> {
+  await updateDoc(
+    doc(db, 'conversations', conversationId, 'messages', messageId),
+    { seenAt: new Date().toISOString() },
+  );
+  await updateDoc(doc(db, 'conversations', conversationId), {
+    lastMessageSeen: true,
+  });
 }
 
 // ─── Contracts ────────────────────────────────────────────────────────────────
@@ -358,6 +452,25 @@ export async function hasReviewedContract(
 }
 
 export async function submitReview(review: Omit<Review, 'id' | 'createdAt'>): Promise<void> {
+  // Get reviewer's subscription tier to enforce limits
+  const fromUser = await getUserDoc(review.fromUid);
+  const tier = fromUser?.subscriptionTier ?? 'free';
+  const limit = BADGE_LIMITS[tier] ?? 1;
+
+  // Determine the number of badges being awarded
+  const badgesAwarded = review.badges && review.badges.length > 0
+    ? review.badges
+    : (review.badge ? [review.badge] : []);
+
+  if (badgesAwarded.length > limit) {
+    throw new Error(`Your subscription tier (${tier}) only allows up to ${limit} badge(s) per review.`);
+  }
+
+  // Also enforce the explicit guard: if reviewer allows only 1, badge must be capped at 1
+  if (limit === 1 && badgesAwarded.length > 1) {
+    throw new Error('Your plan only allows awarding 1 badge per review.');
+  }
+
   const batch = writeBatch(db);
 
   // Add review document
@@ -374,13 +487,12 @@ export async function submitReview(review: Omit<Review, 'id' | 'createdAt'>): Pr
       (toData.averageRating * toData.reviewCount + review.stars) / newCount;
     batch.update(toRef, { averageRating: newAvg, reviewCount: newCount });
 
-    if (review.badge) {
+    // Loop through all awarded badges and increment on UserDoc
+    badgesAwarded.forEach((b) => {
       batch.update(toRef, {
-        [`badgeCounts.${review.badge}`]: (toData as any)[`badgeCounts.${review.badge}`]
-          ? (toData as any)[`badgeCounts.${review.badge}`] + 1
-          : 1,
+        [`badgeCounts.${b}`]: increment(1),
       });
-    }
+    });
   }
 
   // Mirror stats on role-specific profile doc
@@ -393,14 +505,40 @@ export async function submitReview(review: Omit<Review, 'id' | 'createdAt'>): Pr
     const newCount = pd.reviewCount + 1;
     const newAvg = (pd.averageRating * pd.reviewCount + review.stars) / newCount;
     batch.update(profileRef, { averageRating: newAvg, reviewCount: newCount });
-    if (review.badge) {
+    
+    // Loop through all awarded badges and increment on ProfileDoc
+    badgesAwarded.forEach((b) => {
       batch.update(profileRef, {
-        [`badgeCounts.${review.badge}`]: increment(1),
+        [`badgeCounts.${b}`]: increment(1),
       });
-    }
+    });
   }
 
   await batch.commit();
+}
+
+/** Returns how many badges a user has already awarded in reviews for a given contract */
+export async function getBadgesGivenInContract(
+  fromUid: string,
+  contractId: string,
+): Promise<number> {
+  const snap = await getDocs(
+    query(
+      collection(db, 'reviews'),
+      where('fromUid', '==', fromUid),
+      where('contractId', '==', contractId),
+    ),
+  );
+  let count = 0;
+  snap.docs.forEach((d) => {
+    const data = d.data() as Review;
+    if (data.badges && data.badges.length > 0) {
+      count += data.badges.length;
+    } else if (data.badge != null) {
+      count += 1;
+    }
+  });
+  return count;
 }
 
 export async function getReviewsForUser(toUid: string): Promise<Review[]> {

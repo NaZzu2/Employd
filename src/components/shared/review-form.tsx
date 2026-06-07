@@ -21,6 +21,7 @@ import { BadgePicker } from '@/components/shared/badge-display';
 import { useToast } from '@/hooks/use-toast';
 import { submitReview } from '@/lib/firestore';
 import { useAuth } from '@/lib/auth-context';
+import { BADGE_LIMITS } from '@/lib/types';
 import type { BadgeType, StarRating, Contract } from '@/lib/types';
 
 const schema = z.object({
@@ -37,19 +38,28 @@ export function ReviewForm({ contract, recipientName, onSuccess }: ReviewFormPro
   const { userDoc } = useAuth();
   const { toast } = useToast();
   const [stars, setStars] = useState<StarRating | 0>(0);
-  const [badge, setBadge] = useState<BadgeType | null>(null);
+  const [selectedBadges, setSelectedBadges] = useState<BadgeType[]>([]);
   const [loading, setLoading] = useState(false);
 
   const form = useForm({ resolver: zodResolver(schema), defaultValues: { comment: '' } });
 
   if (!userDoc) return null;
 
+  const maxBadges = BADGE_LIMITS[userDoc.subscriptionTier] ?? 1;
   const toUid =
     userDoc.role === 'employer' ? contract.workerId : contract.employerId;
 
   const onSubmit = async (values: { comment?: string }) => {
     if (stars === 0) {
       toast({ variant: 'destructive', title: 'Please select a star rating.' });
+      return;
+    }
+    if (selectedBadges.length > maxBadges) {
+      toast({
+        variant: 'destructive',
+        title: 'Badge limit exceeded',
+        description: `Your plan only allows up to ${maxBadges} badge(s) per review.`,
+      });
       return;
     }
     setLoading(true);
@@ -60,7 +70,8 @@ export function ReviewForm({ contract, recipientName, onSuccess }: ReviewFormPro
         fromRole: userDoc.role,
         toUid,
         stars: stars as StarRating,
-        badge: badge ?? undefined,
+        badge: selectedBadges[0] || undefined,
+        badges: selectedBadges,
         comment: values.comment || undefined,
         contractId: contract.id,
       });
@@ -83,7 +94,18 @@ export function ReviewForm({ contract, recipientName, onSuccess }: ReviewFormPro
         </div>
 
         {/* Badge picker */}
-        <BadgePicker selected={badge} onChange={setBadge} />
+        <div>
+          <BadgePicker
+            selectedBadges={selectedBadges}
+            onChangeBadges={setSelectedBadges}
+            maxBadges={maxBadges}
+          />
+          <p className="text-[11px] text-muted-foreground mt-1.5 italic">
+            {maxBadges === 1
+              ? "You can award 1 badge per review on your current plan."
+              : `You can award up to ${maxBadges} badges per review on your current plan.`}
+          </p>
+        </div>
 
         {/* Comment */}
         <FormField

@@ -1,7 +1,10 @@
 import { userProfile } from '@/lib/data';
+import { useAuth } from '@/lib/auth-context';
+import { THREAD_LIMITS } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Briefcase, Building, Calendar, GraduationCap, MapPin, Upload } from 'lucide-react';
@@ -9,6 +12,7 @@ import { ProfileForm } from '@/components/dashboard/profile-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export default function ProfilePage() {
+    const { userDoc } = useAuth();
   return (
     <div className="grid gap-8 md:grid-cols-3">
       <div className="grid auto-rows-max items-start gap-8 md:col-span-1">
@@ -20,10 +24,24 @@ export default function ProfilePage() {
             </Avatar>
             <CardTitle className="text-2xl">{userProfile.name}</CardTitle>
             <CardDescription className="text-base text-muted-foreground">{userProfile.title}</CardDescription>
-            <div className="flex items-center justify-center gap-2 pt-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4"/>
-                {userProfile.location}
-            </div>
+                        <div className="flex items-center justify-center gap-2 pt-2 text-sm text-muted-foreground">
+                                <MapPin className="h-4 w-4"/>
+                                {userProfile.location}
+                        </div>
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                            {userDoc ? (
+                                <>
+                                    <Badge className={cn('text-sm font-medium', userDoc.subscriptionTier === 'free' ? 'bg-muted' : 'bg-accent/10')}>
+                                        {userDoc.subscriptionTier.charAt(0).toUpperCase() + userDoc.subscriptionTier.slice(1)} Plan
+                                    </Badge>
+                                    {userDoc.role === 'employer' && (
+                                        <div className="text-sm text-muted-foreground ml-2">
+                                            {userDoc.monthlyThreadsStarted} / {THREAD_LIMITS[userDoc.subscriptionTier]} chats used
+                                        </div>
+                                    )}
+                                </>
+                            ) : null}
+                        </div>
           </CardHeader>
           <CardContent>
             <p className="text-center text-muted-foreground">{userProfile.summary}</p>
