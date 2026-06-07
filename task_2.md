@@ -21,10 +21,10 @@
 - [x] If the monthly limit is reached, show a clear blocking dialog/toast explaining the limit and hinting at subscription upgrade
 
 ### A4 — Employer Messages List (`src/app/dashboard/messages/page.tsx`)
-- [ ] Replace mock data with real Firestore fetch: `getUserConversations(uid, 'employer')`
-- [ ] Show unread indicator (bold name + coloured dot) on conversations that have messages with no `seenAt`
-- [ ] Display the monthly thread usage counter at the top (e.g., "X / 10 conversations used this month") with a subtle progress bar
-- [ ] Show an upgrade nudge when usage ≥ 80% of the limit (subscription hook — UI only for now)
+- [x] Replace mock data with real Firestore fetch: `getUserConversations(uid, 'employer')` (falls back to Finnish mock conversations when Firebase not configured)
+- [x] Show unread indicator (bold name + coloured dot) on conversations that have messages with no `seenAt`
+- [x] Display the monthly thread usage counter at the top (e.g., "X / 10 conversations used this month") with a subtle progress bar
+- [x] Show an upgrade nudge when usage ≥ 80% of the limit (subscription hook — UI only for now)
 
 ### A5 — Employer Chat View (`src/app/dashboard/messages/[conversationId]/page.tsx`)
 - [x] Replace mock/static data with real `getConversation(id)` and worker profile fetch

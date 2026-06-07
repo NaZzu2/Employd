@@ -8,6 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { timeAgo } from '@/lib/utils';
 import { getUserConversations } from '@/lib/firestore';
+import { hasValidConfig } from '@/lib/firebase';
+import { FINNISH_WORKERS } from '@/lib/data';
 import { useAuth } from '@/lib/auth-context';
 import { THREAD_LIMITS } from '@/lib/types';
 import type { Conversation } from '@/lib/types';
@@ -21,10 +23,30 @@ export default function MessagesPage() {
 
   useEffect(() => {
     if (!userDoc) return;
-    getUserConversations(userDoc.uid, 'employer')
-      .then(setConversations)
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    if (hasValidConfig) {
+      getUserConversations(userDoc.uid, 'employer')
+        .then(setConversations)
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    } else {
+      // Fallback mock conversations for local testing when Firebase is not configured
+      const mocks = FINNISH_WORKERS.slice(0, 3).map((w, i) => ({
+        id: `mock-fi-${w.uid}`,
+        employerId: userDoc.uid,
+        employerName: userDoc.displayName,
+        workerId: w.uid,
+        workerName: w.displayName,
+        jobPostId: undefined,
+        jobTitle: i === 0 ? 'Kirvesmiehen työ' : undefined,
+        lastMessage: i % 2 === 0 ? 'Hei, kiinnostaisiko tarjous?' : 'Kiitos, kuulemme pian.',
+        lastMessageAt: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
+        createdAt: new Date().toISOString(),
+        lastMessageSenderId: i % 2 === 0 ? w.uid : userDoc.uid,
+        lastMessageSeen: i % 2 === 0 ? false : true,
+      } as Conversation));
+      setConversations(mocks);
+      setLoading(false);
+    }
   }, [userDoc]);
 
   const limit = userDoc ? THREAD_LIMITS[userDoc.subscriptionTier] : 10;
