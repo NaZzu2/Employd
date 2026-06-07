@@ -27,6 +27,7 @@
 - [x] Show an upgrade nudge when usage ≥ 80% of the limit (subscription hook — UI only for now)
 - [x] Add real-time `subscribeToConversations` helper and wire it into the employer messages list so unread indicators update live
 - [x] MessageThread fallback for local testing: show mock messages and allow local sends when Firebase not configured
+- [x] Dev test page: add `/dev/messaging-test` to manually simulate chat UI locally
 
 ### A5 — Employer Chat View (`src/app/dashboard/messages/[conversationId]/page.tsx`)
 - [x] Replace mock/static data with real `getConversation(id)` and worker profile fetch
