@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { sendMessage, subscribeToMessages, markMessageSeen } from '@/lib/firestore';
+import { hasValidConfig } from '@/lib/firebase';
+import { FINNISH_WORKERS } from '@/lib/data';
 import { useAuth } from '@/lib/auth-context';
 import type { Message, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -68,13 +70,42 @@ export function MessageThread({
   const bottomRef = useRef<HTMLDivElement>(null);
   const seenRef = useRef<Set<string>>(new Set());
 
-  // Real-time subscription
+  // Real-time subscription (or mock fallback when Firebase not configured)
   useEffect(() => {
-    const unsub = subscribeToMessages(conversationId, (msgs) => {
-      setMessages(msgs);
-      setLoading(false);
-    });
-    return () => unsub();
+    if (hasValidConfig) {
+      const unsub = subscribeToMessages(conversationId, (msgs) => {
+        setMessages(msgs);
+        setLoading(false);
+      });
+      return () => unsub();
+    }
+
+    // Local mock messages for development when Firebase isn't configured
+    const mockUser = FINNISH_WORKERS[0];
+    const now = new Date().toISOString();
+    const mockMessages: Message[] = [
+      {
+        id: 'mock-1',
+        senderId: mockUser.uid,
+        senderRole: 'employer',
+        senderName: mockUser.displayName,
+        text: 'Hei! Näytät sopivalta tähän työhön — kiinnostaisiko päästä juttelemaan?',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+        seenAt: undefined,
+      },
+      {
+        id: 'mock-2',
+        senderId: userDoc?.uid ?? 'local-user',
+        senderRole: userDoc?.role ?? 'worker',
+        senderName: userDoc?.displayName ?? 'Sinä',
+        text: 'Kiitos! Olen kiinnostunut, kerro lisää.',
+        createdAt: now,
+        seenAt: now,
+      },
+    ];
+    setMessages(mockMessages);
+    setLoading(false);
+    return () => {};
   }, [conversationId]);
 
   // Auto-scroll to bottom
@@ -107,12 +138,29 @@ export function MessageThread({
     setMessages((prev) => [...prev, optimistic]);
     setText('');
     try {
-      await sendMessage(conversationId, {
-        senderId: userDoc.uid,
-        senderRole: userDoc.role,
-        senderName: userDoc.displayName,
-        text: optimistic.text,
-      });
+      if (hasValidConfig) {
+        await sendMessage(conversationId, {
+          senderId: userDoc.uid,
+          senderRole: userDoc.role,
+          senderName: userDoc.displayName,
+          text: optimistic.text,
+        });
+      } else {
+        // Append a faux reply from the other party after a short delay for local testing
+        setTimeout(() => {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `mock-reply-${Date.now()}`,
+              senderId: FINNISH_WORKERS[0].uid,
+              senderRole: 'employer',
+              senderName: FINNISH_WORKERS[0].displayName,
+              text: 'Kiitos viestistä — palaan pian asiaan.',
+              createdAt: new Date().toISOString(),
+            } as Message,
+          ]);
+        }, 800);
+      }
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Failed to send message', description: err.message });
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));

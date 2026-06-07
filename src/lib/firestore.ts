@@ -361,6 +361,25 @@ export function subscribeToMessages(
   );
 }
 
+/** Real-time listener for conversations for a given user (employer or worker) */
+export function subscribeToConversations(
+  uid: string,
+  role: 'employer' | 'worker',
+  onConversations: (convs: Conversation[]) => void,
+): Unsubscribe {
+  const field = role === 'employer' ? 'employerId' : 'workerId';
+  return onSnapshot(
+    query(
+      collection(db, 'conversations'),
+      where(field, '==', uid),
+      orderBy('lastMessageAt', 'desc'),
+    ),
+    (snap) => {
+      onConversations(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Conversation)));
+    },
+  );
+}
+
 /** Mark a specific message as seen (sets seenAt timestamp) */
 export async function markMessageSeen(
   conversationId: string,

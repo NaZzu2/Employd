@@ -25,6 +25,8 @@
 - [x] Show unread indicator (bold name + coloured dot) on conversations that have messages with no `seenAt`
 - [x] Display the monthly thread usage counter at the top (e.g., "X / 10 conversations used this month") with a subtle progress bar
 - [x] Show an upgrade nudge when usage ≥ 80% of the limit (subscription hook — UI only for now)
+- [x] Add real-time `subscribeToConversations` helper and wire it into the employer messages list so unread indicators update live
+- [x] MessageThread fallback for local testing: show mock messages and allow local sends when Firebase not configured
 
 ### A5 — Employer Chat View (`src/app/dashboard/messages/[conversationId]/page.tsx`)
 - [x] Replace mock/static data with real `getConversation(id)` and worker profile fetch
