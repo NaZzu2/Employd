@@ -1,5 +1,6 @@
 'use client';
 
+import { Fragment } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, Briefcase, Search } from 'lucide-react';
@@ -33,7 +34,7 @@ export function DashboardHeader() {
                     </BreadcrumbLink>
                 </BreadcrumbItem>
                 {pathSegments.slice(1).map((segment, index) => (
-                    <React.Fragment key={segment}>
+                    <Fragment key={segment}>
                         <BreadcrumbSeparator />
                         <BreadcrumbItem>
                             {index === pathSegments.length - 2 ? (
@@ -46,7 +47,7 @@ export function DashboardHeader() {
                                 </BreadcrumbLink>
                             )}
                         </BreadcrumbItem>
-                    </React.Fragment>
+                    </Fragment>
                 ))}
             </BreadcrumbList>
         </Breadcrumb>

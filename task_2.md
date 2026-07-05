@@ -34,9 +34,9 @@
 - [x] Render `MessageThread` with the real `conversationId` and other party's name/avatar
 
 ### A6 — Worker Messages List (`src/app/worker/messages/page.tsx`)
-- [ ] Replace mock data with real Firestore fetch: `getUserConversations(uid, 'worker')`
-- [ ] Show unread indicator on conversations with unread messages from employer
-- [ ] Empty state copy: "No messages yet — employers will reach out here after reviewing your profile"
+- [x] Replace mock data with real Firestore fetch: `getUserConversations(uid, 'worker')`
+- [x] Show unread indicator on conversations with unread messages from employer
+- [x] Empty state copy: "No messages yet — employers will reach out here after reviewing your profile"
 
 ### A7 — Worker Chat View (`src/app/worker/messages/[conversationId]/page.tsx`)
 - [x] Replace mock/static data with real `getConversation(id)` and employer profile fetch
@@ -68,15 +68,15 @@
 - [x] Add `getBadgesGivenInContract(fromUid, contractId)` helper that counts how many badges a user has already given in a specific contract's review — used to gate the picker
 
 ### B3 — Badge Picker UI (`src/components/shared/badge-display.tsx`)
-- [ ] Update `BadgePicker` to accept a `maxBadges?: number` prop (defaults to 1 for free tier)
-- [ ] When `maxBadges === 1` (free/standard), only allow selecting a single badge — clicking another deselects the previous one; the current single-select behaviour already works, but make it explicit
-- [ ] Show a subtle label: "1 badge per review (free plan)" with a locked icon next to extra badges
-- [ ] Add a small "Upgrade to give more badges" link/hint when limit is reached — subscription hook for later
+- [x] Update `BadgePicker` to accept a `maxBadges?: number` prop (defaults to 1 for free tier)
+- [x] When `maxBadges === 1` (free/standard), only allow selecting a single badge — clicking another deselects the previous one; the current single-select behaviour already works, but make it explicit
+- [x] Show a subtle label: "1 badge per review (free plan)" with a locked icon next to extra badges
+- [x] Add a small "Upgrade to give more badges" link/hint when limit is reached — subscription hook for later
 
 ### B4 — Review Form (`src/components/shared/review-form.tsx`)
-- [ ] Pass the caller's `subscriptionTier` (from `userDoc`) into `BadgePicker` as `maxBadges={BADGE_LIMITS[userDoc.subscriptionTier]}`
-- [ ] Validate on submit: if `badge` array length exceeds the tier limit, show an error toast and block submission
-- [ ] Display remaining badge allowance beneath the picker (e.g., "You can award 1 badge per review on your current plan")
+- [x] Pass the caller's `subscriptionTier` (from `userDoc`) into `BadgePicker` as `maxBadges={BADGE_LIMITS[userDoc.subscriptionTier]}`
+- [x] Validate on submit: if `badge` array length exceeds the tier limit, show an error toast and block submission
+- [x] Display remaining badge allowance beneath the picker (e.g., "You can award 1 badge per review on your current plan")
 
 ---
 
@@ -95,13 +95,13 @@
 ---
 
 ## Verification
-- [ ] Employer clicks "Message" on a worker card → conversation created → redirected to chat
-- [ ] Second click on the same worker → navigates to existing conversation (no duplicate created)
-- [ ] Employer at limit (10 free) → blocking error toast shown, cannot start new chat
-- [ ] Worker visits messages tab → sees only conversations started by employers
-- [ ] Worker opens a chat with 0 employer messages → send bar is locked/hidden
-- [ ] Worker opens a chat after employer's first message → can reply freely
-- [ ] Messages show exact timestamps and "Seen ✓" when read
-- [ ] New messages appear in real-time without page refresh
-- [ ] Review form: only 1 badge selectable on free tier; selecting a second deselects the first
-- [ ] Upgrade prompt appears when chat limit ≥ 80% or badge limit is reached
+- [x] Employer clicks "Message" on a worker card → conversation created → redirected to chat
+- [x] Second click on the same worker → navigates to existing conversation (no duplicate created)
+- [x] Employer at limit (10 free) → blocking error toast shown, cannot start new chat
+- [x] Worker visits messages tab → sees only conversations started by employers
+- [x] Worker opens a chat with 0 employer messages → send bar is locked/hidden
+- [x] Worker opens a chat after employer's first message → can reply freely
+- [x] Messages show exact timestamps and "Seen ✓" when read
+- [x] New messages appear in real-time without page refresh
+- [x] Review form: only 1 badge selectable on free tier; selecting a second deselects the first
+- [x] Upgrade prompt appears when chat limit ≥ 80% or badge limit is reached

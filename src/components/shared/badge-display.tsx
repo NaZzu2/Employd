@@ -20,9 +20,10 @@ interface BadgeChipProps {
   selected?: boolean;
   onClick?: () => void;
   size?: 'sm' | 'md';
+  className?: string;
 }
 
-export function BadgeChip({ type, count, selected, onClick, size = 'md' }: BadgeChipProps) {
+export function BadgeChip({ type, count, selected, onClick, size = 'md', className }: BadgeChipProps) {
   const cfg = getBadge(type);
   return (
     <TooltipProvider>
@@ -42,6 +43,7 @@ export function BadgeChip({ type, count, selected, onClick, size = 'md' }: Badge
                 : 'border-transparent',
               onClick && 'cursor-pointer hover:opacity-80 hover:scale-105',
               !onClick && 'cursor-default',
+              className
             )}
           >
             <span>{cfg.emoji}</span>

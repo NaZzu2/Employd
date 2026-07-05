@@ -32,7 +32,7 @@ import type {
   UserDoc,
 } from '@/lib/types';
 import { shouldResetMonthlyThreads, canStartThread } from '@/lib/utils';
-import { THREAD_LIMITS } from '@/lib/types';
+import { THREAD_LIMITS, BADGE_LIMITS } from '@/lib/types';
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
