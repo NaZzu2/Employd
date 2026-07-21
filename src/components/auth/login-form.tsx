@@ -43,7 +43,7 @@ export function LoginForm() {
     setLoading(true);
     try {
       const role = await signIn(values.email, values.password);
-      router.push(role === 'employer' ? '/dashboard' : '/employee');
+      router.push(role === 'employer' ? '/dashboard' : '/worker');
     } catch (err: any) {
       toast({
         variant: 'destructive',

@@ -46,7 +46,7 @@ export function SignupForm() {
     setLoading(true);
     try {
       await signUp(values.email, values.password, values.name, role);
-      router.push(role === 'employer' ? '/dashboard' : '/employee');
+      router.push(role === 'employer' ? '/dashboard' : '/worker');
     } catch (err: any) {
       toast({
         variant: 'destructive',

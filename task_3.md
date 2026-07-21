@@ -12,15 +12,15 @@ Build a bidirectional messaging platform where **employees can message employers
 - [x] Confirm `sendMessage` and `subscribeToMessages` work for employee → employer direction
 - [x] Confirm `markMessageSeen` works bidirectionally
 
-### A2 — Employee Messages List (`src/app/employee/messages/page.tsx`)
-- [x] Create new `/employee/messages/page.tsx` route
+### A2 — Employee Messages List (`src/app/worker/messages/page.tsx`)
+- [x] Create new `/worker/messages/page.tsx` route
 - [x] Replace mock data with real Firestore fetch: `getUserConversations(uid, 'employee')`
 - [x] Show unread indicator (bold name + coloured dot) on conversations with unread messages
 - [x] Display recent message preview and timestamp
 - [x] Empty state copy: "No conversations yet — start by pinging a job or replying to an employer"
 - [x] Real-time listener: `subscribeToConversations` to update unread indicators live
 
-### A3 — Employee Chat View (`src/app/employee/messages/[conversationId]/page.tsx`)
+### A3 — Employee Chat View (`src/app/worker/messages/[conversationId]/page.tsx`)
 - [x] Create new route for individual conversations
 - [x] Fetch real `getConversation(id)` and employer profile data
 - [x] Render `MessageThread` with real `conversationId` and employer's name/avatar
@@ -29,7 +29,7 @@ Build a bidirectional messaging platform where **employees can message employers
 ### A4 — Start Conversation from Job Listing
 - [x] Add "Message Employer" button on job detail pages
 - [x] Button calls `getOrCreateConversation(employee, employerId, employerName)` 
-- [x] Navigate to `/employee/messages/<conversationId>` on success
+- [x] Navigate to `/worker/messages/<conversationId>` on success
 - [x] Show loading spinner while conversation is being created
 - [x] If conversation already exists, navigate to existing thread (no duplicates)
 - [x] Show toast: "Conversation started with [Employer Name]"

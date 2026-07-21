@@ -6,10 +6,10 @@ import { Home, Briefcase, MessageSquare, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const tabs = [
-  { href: '/employee', icon: Home, label: 'Home', exact: true },
-  { href: '/employee/jobs', icon: Briefcase, label: 'Jobs' },
-  { href: '/employee/messages', icon: MessageSquare, label: 'Messages' },
-  { href: '/employee/my-profile', icon: User, label: 'Profile' },
+  { href: '/worker', icon: Home, label: 'Home', exact: true },
+  { href: '/worker/jobs', icon: Briefcase, label: 'Jobs' },
+  { href: '/worker/messages', icon: MessageSquare, label: 'Messages' },
+  { href: '/worker/my-profile', icon: User, label: 'Profile' },
 ];
 
 export function WorkerBottomNav() {

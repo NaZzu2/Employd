@@ -38,7 +38,7 @@ export function EmployeeJobCard({ job, onMessageEmployer, onPingSent, busy }: Em
                 <AvatarFallback>{job.companyName[0]}</AvatarFallback>
               </Avatar>
               <div>
-                <Link href={`/employee/jobs/${job.id}`} className="block">
+                <Link href={`/worker/jobs/${job.id}`} className="block">
                   <h3 className="font-semibold text-base leading-tight hover:text-accent">{job.title}</h3>
                 </Link>
                 <p className="text-sm text-muted-foreground">{job.companyName}</p>

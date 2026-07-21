@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getUserDoc, getOrCreateConversation } from '@/lib/firestore';
 import type { JobPost } from '@/lib/types';
 
-export default function EmployeeJobsPage() {
+export default function WorkerJobsPage() {
   const { userDoc } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -83,7 +83,7 @@ export default function EmployeeJobsPage() {
       if (!hasValidConfig) {
         const convId = `mock-${job.id}`;
         toast({ title: 'Conversation started', description: `Conversation started with ${job.companyName}.` });
-        router.push(`/employee/messages/${convId}`);
+        router.push(`/worker/messages/${convId}`);
         return;
       }
       const employerDoc = await getUserDoc(job.employerId);
@@ -96,7 +96,7 @@ export default function EmployeeJobsPage() {
         job.title,
       );
       toast({ title: 'Conversation started', description: `Conversation started with ${job.companyName}.` });
-      router.push(`/employee/messages/${conversationId}`);
+      router.push(`/worker/messages/${conversationId}`);
     } catch (error: any) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Unable to start conversation', description: error?.message ?? 'Try again later.' });
@@ -107,7 +107,7 @@ export default function EmployeeJobsPage() {
 
   const handlePingSent = (conversationId: string) => {
     toast({ title: 'Conversation created', description: 'We created a chat with the employer.' });
-    router.push(`/employee/messages/${conversationId}`);
+    router.push(`/worker/messages/${conversationId}`);
   };
 
   return (
