@@ -214,16 +214,21 @@ export async function startConversation(
   }
 
   const now = new Date().toISOString();
+  
+  // Validate required fields
+  if (!employer.displayName) throw new Error('Employer name is missing');
+  if (!workerName) throw new Error('Worker name is missing');
+  
   const conv: Omit<Conversation, 'id'> = {
     employerId: employer.uid,
     employerName: employer.displayName,
     workerId,
     workerName,
-    jobPostId,
-    jobTitle,
     lastMessage: '',
     lastMessageAt: now,
     createdAt: now,
+    ...(jobPostId && { jobPostId }),
+    ...(jobTitle && { jobTitle }),
   };
 
   const ref = await addDoc(collection(db, 'conversations'), conv);
