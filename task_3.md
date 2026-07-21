@@ -8,37 +8,37 @@ Build a bidirectional messaging platform where **employees can message employers
 ## Feature A: Employee-Initiated Messaging with Employers
 
 ### A1 — Reuse Existing Firestore Infrastructure
-- [ ] Verify `Message`, `Conversation`, and related types support bidirectional messaging (they should already)
-- [ ] Confirm `sendMessage` and `subscribeToMessages` work for employee → employer direction
-- [ ] Confirm `markMessageSeen` works bidirectionally
+- [x] Verify `Message`, `Conversation`, and related types support bidirectional messaging (they should already)
+- [x] Confirm `sendMessage` and `subscribeToMessages` work for employee → employer direction
+- [x] Confirm `markMessageSeen` works bidirectionally
 
 ### A2 — Employee Messages List (`src/app/employee/messages/page.tsx`)
-- [ ] Create new `/employee/messages/page.tsx` route
-- [ ] Replace mock data with real Firestore fetch: `getUserConversations(uid, 'employee')`
-- [ ] Show unread indicator (bold name + coloured dot) on conversations with unread messages
-- [ ] Display recent message preview and timestamp
-- [ ] Empty state copy: "No conversations yet — start by pinging a job or replying to an employer"
-- [ ] Real-time listener: `subscribeToConversations` to update unread indicators live
+- [x] Create new `/employee/messages/page.tsx` route
+- [x] Replace mock data with real Firestore fetch: `getUserConversations(uid, 'employee')`
+- [x] Show unread indicator (bold name + coloured dot) on conversations with unread messages
+- [x] Display recent message preview and timestamp
+- [x] Empty state copy: "No conversations yet — start by pinging a job or replying to an employer"
+- [x] Real-time listener: `subscribeToConversations` to update unread indicators live
 
 ### A3 — Employee Chat View (`src/app/employee/messages/[conversationId]/page.tsx`)
-- [ ] Create new route for individual conversations
-- [ ] Fetch real `getConversation(id)` and employer profile data
-- [ ] Render `MessageThread` with real `conversationId` and employer's name/avatar
-- [ ] Display employer's name and profile link at the top
+- [x] Create new route for individual conversations
+- [x] Fetch real `getConversation(id)` and employer profile data
+- [x] Render `MessageThread` with real `conversationId` and employer's name/avatar
+- [x] Display employer's name and profile link at the top
 
 ### A4 — Start Conversation from Job Listing
-- [ ] Add "Message Employer" button on job detail pages
-- [ ] Button calls `getOrCreateConversation(employee, employerId, employerName)` 
-- [ ] Navigate to `/employee/messages/<conversationId>` on success
-- [ ] Show loading spinner while conversation is being created
-- [ ] If conversation already exists, navigate to existing thread (no duplicates)
-- [ ] Show toast: "Conversation started with [Employer Name]"
+- [x] Add "Message Employer" button on job detail pages
+- [x] Button calls `getOrCreateConversation(employee, employerId, employerName)` 
+- [x] Navigate to `/employee/messages/<conversationId>` on success
+- [x] Show loading spinner while conversation is being created
+- [x] If conversation already exists, navigate to existing thread (no duplicates)
+- [x] Show toast: "Conversation started with [Employer Name]"
 
 ### A5 — MessageThread Component (Already Reusable)
-- [ ] Verify `MessageThread` works for both employee ↔ employer messaging
-- [ ] Timestamps display correctly
-- [ ] "Seen ✓" receipts appear when messages are read
-- [ ] Real-time updates work
+- [x] Verify `MessageThread` works for both employee ↔ employer messaging
+- [x] Timestamps display correctly
+- [x] "Seen ✓" receipts appear when messages are read
+- [x] Real-time updates work
 
 ### A6 — Firestore Security Rules
 - [ ] Ensure employees can create conversations with employers
@@ -50,14 +50,14 @@ Build a bidirectional messaging platform where **employees can message employers
 ## Feature B: Dummy Finnish Job Listings (Construction & Car Mechanics)
 
 ### B1 — Create Dummy Employer Account
-- [ ] Create a test employer user in Firestore: `users/{testEmployerId}` with role='employer'
+- [x] Create a test employer user in Firestore: `users/{testEmployerId}` with role='employer'
   - Name: "Suomalainen Rakentajat Oy" (or similar)
   - Email: something recognizable for testing
   - subscriptionTier: 'pro' (to allow multiple jobs)
   - Location: Helsinki, Finland (lat: 60.1699, lng: 24.9384)
 
 ### B2 — Create Dummy Construction Job Posts
-- [ ] Job 1: "Kirvesmies palkataan remonttitöihin"
+- [x] Job 1: "Kirvesmies palkataan remonttitöihin"
   - Title: Carpentry/Renovation
   - Description: Seeking skilled carpenter for residential renovation project
   - Skills: Carpentry, Finish Work, Drywall
@@ -65,7 +65,7 @@ Build a bidirectional messaging platform where **employees can message employers
   - Pay range: €25-35/hour
   - Status: active
 
-- [ ] Job 2: "Sähköasentaja tarvitaan uudiskohteeseen"
+- [x] Job 2: "Sähköasentaja tarvitaan uudiskohteeseen"
   - Title: Electrician for New Build
   - Description: Electrical wiring for new construction project
   - Skills: Electrical Wiring, Commercial Standards, Safety
@@ -73,7 +73,7 @@ Build a bidirectional messaging platform where **employees can message employers
   - Pay range: €28-38/hour
   - Status: active
 
-- [ ] Job 3: "Putkiasentaja urakkahommiin"
+- [x] Job 3: "Putkiasentaja urakkahommiin"
   - Title: Plumber for Contract Work
   - Description: Plumbing installation and repairs
   - Skills: Plumbing, Pipe Installation, Troubleshooting
@@ -82,7 +82,7 @@ Build a bidirectional messaging platform where **employees can message employers
   - Status: active
 
 ### B3 — Create Dummy Car Mechanics Job Posts
-- [ ] Job 4: "Autonasentaja auto- ja kuorma-autoille"
+- [x] Job 4: "Autonasentaja auto- ja kuorma-autoille"
   - Title: Auto Mechanic (Cars & Trucks)
   - Description: General maintenance and repair of cars and commercial vehicles
   - Skills: Engine Repair, Diagnostics, Welding
@@ -90,7 +90,7 @@ Build a bidirectional messaging platform where **employees can message employers
   - Pay range: €26-36/hour
   - Status: active
 
-- [ ] Job 5: "Rengashuollon ammattilainen"
+- [x] Job 5: "Rengashuollon ammattilainen"
   - Title: Tire & Suspension Specialist
   - Description: Tire changes, alignment, suspension work
   - Skills: Tire Maintenance, Wheel Alignment, Suspension
@@ -98,7 +98,7 @@ Build a bidirectional messaging platform where **employees can message employers
   - Pay range: €22-28/hour
   - Status: active
 
-- [ ] Job 6: "Autojen korjaaja erikoistuneesti sähkö- ja hybridivoiman"
+- [x] Job 6: "Autojen korjaaja erikoistuneesti sähkö- ja hybridivoiman"
   - Title: EV/Hybrid Specialist
   - Description: Electric and hybrid vehicle maintenance and repair
   - Skills: EV Systems, Battery Diagnostics, High Voltage Safety
@@ -116,40 +116,40 @@ Build a bidirectional messaging platform where **employees can message employers
 ## Feature C: Employee Job Board & Pinging
 
 ### C1 — Employee Job Board Page (`src/app/employee/jobs/page.tsx`)
-- [ ] Create new route to display available job listings
-- [ ] Fetch all active job posts: `getActiveJobPosts()`
-- [ ] Display job card with:
+- [x] Create new route to display available job listings
+- [x] Fetch all active job posts: `getActiveJobPosts()`
+- [x] Display job card with:
   - Job title, description, skills, location
   - Employer name and avatar
   - Pay range
   - "Interested" / "Message Employer" button
-- [ ] Search/filter by:
+- [x] Search/filter by:
   - Job title or description
   - Skills
   - Location (with radius filter)
-- [ ] Empty state: "No jobs available in your area"
+- [x] Empty state: "No jobs available in your area"
 
 ### C2 — Ping Functionality (Reuse from Task 2)
-- [ ] Verify `sendPing(employeeId, jobPostId, employerId, ...)` works for this direction
-- [ ] "Interested" button on job cards calls ping function
-- [ ] Show toast: "You've expressed interest — the employer will be notified"
-- [ ] After pinging, navigate to `/employee/messages/<conversationId>` or show messaging prompt
-- [ ] Loading spinner while ping is being sent
+- [x] Verify `sendPing(employeeId, jobPostId, employerId, ...)` works for this direction
+- [x] "Interested" button on job cards calls ping function
+- [x] Show toast: "You've expressed interest — the employer will be notified"
+- [x] After pinging, navigate to `/employee/messages/<conversationId>` or show messaging prompt
+- [x] Loading spinner while ping is being sent
 
 ### C3 — Job Detail Page (`src/app/employee/jobs/[id]/page.tsx`)
-- [ ] Display full job details
-- [ ] Show employer profile card
-- [ ] "Message Employer" button (creates conversation)
-- [ ] "Express Interest" / "Ping" button (sends ping)
-- [ ] Related jobs from same employer
+- [x] Display full job details
+- [x] Show employer profile card
+- [x] "Message Employer" button (creates conversation)
+- [x] "Express Interest" / "Ping" button (sends ping)
+- [x] Related jobs from same employer
 
 ---
 
 ## Feature D: Navigation & Layout for Employees
 
 ### D1 — Employee Layout Routes
-- [ ] Verify `/employee` has proper layout structure
-- [ ] Create/update bottom nav for mobile with links to:
+- [x] Verify `/employee` has proper layout structure
+- [x] Create/update bottom nav for mobile with links to:
   - `/employee/jobs` (Job Board)
   - `/employee/messages` (Conversations)
   - `/employee/reviews` (Reviews & Ratings)
@@ -157,10 +157,10 @@ Build a bidirectional messaging platform where **employees can message employers
 - [ ] Update sidebar for desktop if needed
 
 ### D2 — Employee Profile Sidebar/Nav
-- [ ] Show current user's role badge: "Employee"
-- [ ] Show subscription tier
-- [ ] Link to `/employee/my-profile`
-- [ ] Link to `/employee/jobs`
+- [x] Show current user's role badge: "Employee"
+- [x] Show subscription tier
+- [x] Link to `/employee/my-profile`
+- [x] Link to `/employee/jobs`
 
 ---
 
@@ -184,13 +184,13 @@ Build a bidirectional messaging platform where **employees can message employers
 ## Feature F: UI Components (Reuse & Minor Customization)
 
 ### F1 — Reuse from Task 2
-- [ ] `MessageThread` — works as-is for employee ↔ employer
+- [x] `MessageThread` — works as-is for employee ↔ employer
 - [ ] `BadgeDisplay` — display employer badges on job cards
 - [ ] `StarRatingDisplay` — show employer rating on job cards
 - [ ] `UpgradePrompt` — optional upsell on limited actions
 
 ### F2 — New/Minor Components
-- [ ] `JobCard` — similar to `WorkerCard`, shows job details
+- [x] `JobCard` — similar to `WorkerCard`, shows job details
 - [ ] `JobDetailHeader` — job title, employer, pay range
 - [ ] `JobSearchFilters` — search by title, skills, location
 
@@ -199,25 +199,25 @@ Build a bidirectional messaging platform where **employees can message employers
 ## Verification
 
 ### Messaging Verification
-- [ ] Employee clicks "Message Employer" on job card → conversation created → redirected to chat
-- [ ] Second click on same employer → navigates to existing conversation (no duplicate)
-- [ ] Employee visits `/employee/messages` → sees only conversations with employers
-- [ ] Employee receives message from employer → shows unread indicator
-- [ ] Messages display timestamps and "Seen ✓" when read
-- [ ] New messages appear in real-time
+- [x] Employee clicks "Message Employer" on job card → conversation created → redirected to chat
+- [x] Second click on same employer → navigates to existing conversation (no duplicate)
+- [x] Employee visits `/employee/messages` → sees only conversations with employers
+- [x] Employee receives message from employer → shows unread indicator
+- [x] Messages display timestamps and "Seen ✓" when read
+- [x] New messages appear in real-time
 
 ### Job Listing Verification
-- [ ] All 6 dummy jobs visible in `/employee/jobs`
-- [ ] Jobs are filterable by location and skills
-- [ ] Jobs display correct employer name and pay range
-- [ ] Employee can view job details in `/employee/jobs/[id]`
-- [ ] Job detail shows employer profile card
+- [x] All 6 dummy jobs visible in `/employee/jobs`
+- [x] Jobs are filterable by location and skills
+- [x] Jobs display correct employer name and pay range
+- [x] Employee can view job details in `/employee/jobs/[id]`
+- [x] Job detail shows employer profile card
 
 ### Pinging Verification
-- [ ] Employee clicks "Interested" on job → ping sent → toast shown
+- [x] Employee clicks "Interested" on job → ping sent → toast shown
 - [ ] Employer receives ping notification (if system implemented)
-- [ ] Conversation created automatically after ping (optional flow)
-- [ ] Employee can message employer after pinging job
+- [x] Conversation created automatically after ping (optional flow)
+- [x] Employee can message employer after pinging job
 
 ---
 
