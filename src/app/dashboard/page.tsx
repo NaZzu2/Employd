@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Briefcase, MessageSquare, MapPin, Bell, Loader2, Plus, UserRound } from 'lucide-react';
+import { Briefcase, MessageSquare, MapPin, Bell, Loader2, Plus, UserRound, Users } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import { getEmployerProfile, getEmployerJobPosts, getEmployerPings, getUserConversations } from '@/lib/firestore';
+import { getEmployerProfile, getEmployerJobPosts, getEmployerPings, getUserConversations, getWorkersLookingForWork } from '@/lib/firestore';
 import { hasValidConfig } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -105,9 +105,14 @@ export default function DashboardPage() {
     const [jobs, setJobs] = useState<JobPost[]>([]);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [pings, setPings] = useState<Ping[]>([]);
+    const [availableWorkerCount, setAvailableWorkerCount] = useState<number | null>(null);
 
     useEffect(() => {
-      if (!userDoc?.uid) return;
+      if (!userDoc?.uid) {
+        // If auth is done loading and still no user, stop loading
+        setLoading(false);
+        return;
+      }
 
       const load = async () => {
         try {
@@ -136,16 +141,18 @@ export default function DashboardPage() {
             
             if (employerProfile) {
               // Profile exists - load all data
-              const [jobPosts, employerConversations, employerPings] = await Promise.all([
+              const [jobPosts, employerConversations, employerPings, availableWorkers] = await Promise.all([
                 getEmployerJobPosts(userDoc.uid).catch(() => []),
                 getUserConversations(userDoc.uid, 'employer').catch(() => []),
                 getEmployerPings(userDoc.uid).catch(() => []),
+                getWorkersLookingForWork().catch(() => []),
               ]);
 
               setProfile(employerProfile);
               setJobs(jobPosts);
               setConversations(employerConversations);
               setPings(employerPings);
+              setAvailableWorkerCount(availableWorkers.length);
             }
           } catch (error: any) {
             if (error.message?.includes('timeout')) {
@@ -249,7 +256,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Active Jobs</CardDescription>
@@ -270,6 +277,17 @@ export default function DashboardPage() {
               <CardTitle className="text-3xl">{stats.pendingPings}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">Workers interested in your jobs.</CardContent>
+          </Card>
+          <Card className="border-accent/30 bg-accent/5">
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> Available Workers</CardDescription>
+              <CardTitle className="text-3xl">{availableWorkerCount ?? '—'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Link href="/dashboard/workers" className="text-sm text-accent underline underline-offset-2">
+                Browse worker pool →
+              </Link>
+            </CardContent>
           </Card>
         </div>
 
@@ -307,6 +325,12 @@ export default function DashboardPage() {
               <CardDescription>Jump to the most common employer workflows</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
+              <Button asChild variant="outline" className="justify-start">
+                <Link href="/dashboard/workers">
+                  <Users className="mr-2 h-4 w-4" />
+                  Find Workers
+                </Link>
+              </Button>
               <Button asChild variant="outline" className="justify-start">
                 <Link href="/dashboard/my-jobs">
                   <Briefcase className="mr-2 h-4 w-4" />

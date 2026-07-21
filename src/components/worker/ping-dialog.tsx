@@ -23,8 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { getOrCreateConversation, getUserDoc, sendPing } from '@/lib/firestore';
-import { hasValidConfig } from '@/lib/firebase';
+import { sendPing } from '@/lib/firestore';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import type { JobPost } from '@/lib/types';
@@ -60,7 +59,7 @@ export function PingDialog({ job, open, onOpenChange, onPingSent }: PingDialogPr
       await sendPing({
         workerId: userDoc.uid,
         workerName: userDoc.displayName,
-        workerTitle: '',       // filled from workerProfile in a real app
+        workerTitle: '',
         ...(userDoc.avatarUrl && { workerAvatarUrl: userDoc.avatarUrl }),
         jobPostId: job.id,
         jobTitle: job.title,
@@ -71,26 +70,11 @@ export function PingDialog({ job, open, onOpenChange, onPingSent }: PingDialogPr
         title: '⚡ Ping sent!',
         description: `${job.companyName} has been notified of your interest.`,
       });
-      let conversationId: string | null = null;
-      if (hasValidConfig) {
-        const employerDoc = await getUserDoc(job.employerId);
-        if (employerDoc) {
-          const result = await getOrCreateConversation(
-            employerDoc,
-            userDoc.uid,
-            userDoc.displayName,
-            job.id,
-            job.title,
-          );
-          conversationId = result.conversationId;
-        }
-      } else {
-        conversationId = `mock-${job.id}`;
-      }
       form.reset();
       onOpenChange(false);
-      if (conversationId && onPingSent) {
-        onPingSent(conversationId);
+      // Notify parent — no conversationId yet; employer creates it when they reply
+      if (onPingSent) {
+        onPingSent('');
       }
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Failed to send ping', description: err.message });

@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', icon: Users, label: 'Dashboard Home', exact: true },
+  { href: '/dashboard/workers', icon: Users, label: 'Find Workers' },
   { href: '/dashboard/setup', icon: User, label: 'Setup Profile' },
   { href: '/dashboard/post-job', icon: Briefcase, label: 'Post Job' },
   { href: '/dashboard/my-jobs', icon: Briefcase, label: 'My Jobs' },

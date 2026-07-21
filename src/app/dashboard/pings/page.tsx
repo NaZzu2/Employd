@@ -24,7 +24,7 @@ import type { Ping } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 export default function PingsPage() {
-  const { userDoc } = useAuth();
+  const { userDoc, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [pings, setPings] = useState<Ping[]>([]);
@@ -32,12 +32,13 @@ export default function PingsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userDoc?.uid) return;
+    if (authLoading) return;
+    if (!userDoc?.uid) { setLoading(false); return; }
     getEmployerPings(userDoc.uid)
       .then(setPings)
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [userDoc?.uid]);
+  }, [userDoc?.uid, authLoading]);
 
   const handleDecline = async (ping: Ping) => {
     await updatePingStatus(ping.id, 'declined');

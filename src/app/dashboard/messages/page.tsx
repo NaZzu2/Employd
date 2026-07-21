@@ -17,12 +17,13 @@ import { UpgradePrompt } from '@/components/shared/upgrade-prompt';
 import { cn } from '@/lib/utils';
 
 export default function MessagesPage() {
-  const { userDoc } = useAuth();
+  const { userDoc, loading: authLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userDoc) return;
+    if (authLoading) return;
+    if (!userDoc) { setLoading(false); return; }
     if (hasValidConfig) {
       const unsub = subscribeToConversations(userDoc.uid, 'employer', (convs) => {
         setConversations(convs);

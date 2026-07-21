@@ -14,18 +14,19 @@ import type { JobPost } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 export default function MyJobsPage() {
-  const { userDoc } = useAuth();
+  const { userDoc, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [jobs, setJobs] = useState<JobPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userDoc?.uid) return;
+    if (authLoading) return;
+    if (!userDoc?.uid) { setLoading(false); return; }
     getEmployerJobPosts(userDoc.uid)
       .then(setJobs)
       .catch((error) => console.error(error))
       .finally(() => setLoading(false));
-  }, [userDoc?.uid]);
+  }, [userDoc?.uid, authLoading]);
 
   const handleToggleStatus = async (job: JobPost) => {
     const next = job.status === 'active' ? 'closed' : 'active';

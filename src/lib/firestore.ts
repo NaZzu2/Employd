@@ -61,14 +61,20 @@ export async function getWorkerProfile(uid: string): Promise<WorkerProfile | nul
 }
 
 export async function getAllWorkerProfiles(): Promise<WorkerProfile[]> {
+  const snap = await getDocs(collection(db, 'workerProfiles'));
+  const profiles = snap.docs.map((d) => d.data() as WorkerProfile);
+  return profiles.sort((a, b) => {
+    if (a.isLookingForWork !== b.isLookingForWork) return a.isLookingForWork ? -1 : 1;
+    return (b.averageRating ?? 0) - (a.averageRating ?? 0);
+  });
+}
+
+export async function getWorkersLookingForWork(): Promise<WorkerProfile[]> {
   const snap = await getDocs(
-    query(
-      collection(db, 'workerProfiles'),
-      orderBy('isLookingForWork', 'desc'),
-      orderBy('averageRating', 'desc'),
-    ),
+    query(collection(db, 'workerProfiles'), where('isLookingForWork', '==', true)),
   );
-  return snap.docs.map((d) => d.data() as WorkerProfile);
+  const profiles = snap.docs.map((d) => d.data() as WorkerProfile);
+  return profiles.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
 }
 
 export async function updateWorkerProfile(
@@ -313,13 +319,10 @@ export async function getUserConversations(
 ): Promise<Conversation[]> {
   const field = role === 'employer' ? 'employerId' : 'workerId';
   const snap = await getDocs(
-    query(
-      collection(db, 'conversations'),
-      where(field, '==', uid),
-      orderBy('lastMessageAt', 'desc'),
-    ),
+    query(collection(db, 'conversations'), where(field, '==', uid)),
   );
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Conversation));
+  const convs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Conversation));
+  return convs.sort((a, b) => new Date(b.lastMessageAt ?? 0).getTime() - new Date(a.lastMessageAt ?? 0).getTime());
 }
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
@@ -398,13 +401,10 @@ export function subscribeToConversations(
 ): Unsubscribe {
   const field = role === 'employer' ? 'employerId' : 'workerId';
   return onSnapshot(
-    query(
-      collection(db, 'conversations'),
-      where(field, '==', uid),
-      orderBy('lastMessageAt', 'desc'),
-    ),
+    query(collection(db, 'conversations'), where(field, '==', uid)),
     (snap) => {
-      onConversations(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Conversation)));
+      const convs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Conversation));
+      onConversations(convs.sort((a, b) => new Date(b.lastMessageAt ?? 0).getTime() - new Date(a.lastMessageAt ?? 0).getTime()));
     },
   );
 }
@@ -463,13 +463,10 @@ export async function getUserContracts(
 ): Promise<Contract[]> {
   const field = role === 'employer' ? 'employerId' : 'workerId';
   const snap = await getDocs(
-    query(
-      collection(db, 'contracts'),
-      where(field, '==', uid),
-      orderBy('createdAt', 'desc'),
-    ),
+    query(collection(db, 'contracts'), where(field, '==', uid)),
   );
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Contract));
+  const contracts = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Contract));
+  return contracts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export async function getPendingContractsForWorker(workerId: string): Promise<Contract[]> {
@@ -591,11 +588,8 @@ export async function getBadgesGivenInContract(
 
 export async function getReviewsForUser(toUid: string): Promise<Review[]> {
   const snap = await getDocs(
-    query(
-      collection(db, 'reviews'),
-      where('toUid', '==', toUid),
-      orderBy('createdAt', 'desc'),
-    ),
+    query(collection(db, 'reviews'), where('toUid', '==', toUid)),
   );
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Review));
+  const reviews = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Review));
+  return reviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }

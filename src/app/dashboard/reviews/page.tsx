@@ -69,7 +69,7 @@ const MOCK_CONTRACTS: Contract[] = [
 const mockBadgeCounts = { ...EMPTY_BADGE_COUNTS, professional: 1, reliable: 1 };
 
 export default function ReviewsPage() {
-  const { userDoc } = useAuth();
+  const { userDoc, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [contracts, setContracts] = useState<Contract[]>(MOCK_CONTRACTS);
   const [received] = useState<Review[]>(MOCK_RECEIVED);
