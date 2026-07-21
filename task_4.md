@@ -8,7 +8,7 @@ Enable employers to build and manage real profiles, create job postings that app
 ## Feature A: Employer Profile Setup & Management
 
 ### A1 — Employer Signup/Onboarding Flow
-- [ ] Create `/dashboard/setup` route for first-time employer setup
+- [x] Create `/dashboard/setup` route for first-time employer setup
 - [ ] Collect employer information:
   - Company name (required)
   - Industry (required, dropdown: Construction, Manufacturing, Services, IT, Other)
@@ -17,25 +17,25 @@ Enable employers to build and manage real profiles, create job postings that app
   - Website URL (optional)
   - Company logo/avatar (optional, image upload)
   - Contact email (autofilled from auth)
-- [ ] Save to `employerProfiles/{uid}` in Firestore
+- [x] Save to `employerProfiles/{uid}` in Firestore
 - [ ] Create entry in `users/{uid}` with role='employer' if not exists
-- [ ] Redirect to `/dashboard` after setup complete
-- [ ] Show toast: "Profile created successfully!"
+- [x] Redirect to `/dashboard` after setup complete
+- [x] Show toast: "Profile created successfully!"
 
 ### A2 — Employer Profile Page (`/dashboard/profile`)
-- [ ] Display current employer profile info
-- [ ] Allow editing all fields from A1
+- [x] Display current employer profile info
+- [x] Allow editing all fields from A1
 - [ ] Show subscription tier and monthly thread limit usage
-- [ ] Display average rating and review count (fetched from `users/{uid}`)
+- [x] Display average rating and review count (fetched from `users/{uid}`)
 - [ ] Button to upgrade subscription tier (optional flow)
 - [ ] Delete/Deactivate account option (optional for MVP)
-- [ ] Save button with validation and error handling
-- [ ] Success toast: "Profile updated successfully!"
+- [x] Save button with validation and error handling
+- [x] Success toast: "Profile updated successfully!"
 
 ### A3 — Profile Completion Guard
-- [ ] Check if employer has `employerProfiles/{uid}` on `/dashboard` load
-- [ ] If missing, redirect to `/dashboard/setup`
-- [ ] Allow skipping setup with "Skip for now" button (but show banner reminder)
+- [x] Check if employer has `employerProfiles/{uid}` on `/dashboard` load
+- [x] If missing, redirect to `/dashboard/setup`
+- [x] Allow skipping setup with "Skip for now" button (but show banner reminder)
 - [ ] Prevent posting jobs until profile is created
 
 ---
@@ -43,7 +43,7 @@ Enable employers to build and manage real profiles, create job postings that app
 ## Feature B: Job Posting & Management
 
 ### B1 — Create Job Post Form (`/dashboard/post-job`)
-- [ ] Form fields:
+- [x] Form fields:
   - Job title (required, text input)
   - Job type (required, dropdown: Full-time, Part-time, Contract)
   - Description (required, textarea with markdown support)
@@ -51,42 +51,42 @@ Enable employers to build and manage real profiles, create job postings that app
   - Location (required, map picker or address search with lat/lng)
   - Salary/pay (required, text field: "€20-30/hour" or similar)
   - Job status (auto-set to 'active')
-- [ ] Validate all required fields before submit
-- [ ] Call `createJobPost(jobData)` Firestore function
-- [ ] Show loading spinner during submission
-- [ ] On success:
+- [x] Validate all required fields before submit
+- [x] Call `createJobPost(jobData)` Firestore function
+- [x] Show loading spinner during submission
+- [x] On success:
   - Toast: "Job posted successfully!"
   - Redirect to `/dashboard/my-jobs`
-- [ ] On error: Show error toast with message
+- [x] On error: Show error toast with message
 
 ### B2 — Job List & Management (`/dashboard/my-jobs`)
-- [ ] Display all jobs posted by current employer
-- [ ] For each job show:
+- [x] Display all jobs posted by current employer
+- [x] For each job show:
   - Job title, type, location
   - Posted date
   - Status badge (active/closed)
-  - Number of pings received
-  - Number of applications/conversations
+  - [ ] Number of pings received
+  - [ ] Number of applications/conversations
 - [ ] Sort by: Most Recent, Most Pings, Active Status
 - [ ] Filter by status: All, Active, Closed
-- [ ] Actions per job:
+- [x] Actions per job:
   - "View Details" → `/dashboard/my-jobs/[id]`
   - "Edit" → `/dashboard/my-jobs/[id]/edit`
   - "Close" → Changes status to 'closed' (soft delete, keep in DB)
-  - "View Interested" → Shows list of workers who pinged
-- [ ] Empty state: "You haven't posted any jobs yet"
-- [ ] "Post New Job" button → `/dashboard/post-job`
+  - [ ] "View Interested" → Shows list of workers who pinged
+- [x] Empty state: "You haven't posted any jobs yet"
+- [x] "Post New Job" button → `/dashboard/post-job`
 
 ### B3 — Job Detail & Edit (`/dashboard/my-jobs/[id]` & `/dashboard/my-jobs/[id]/edit`)
 - [ ] View mode:
-  - Display all job details
-  - Show number of views (query count from interactions)
-  - Show list of interested workers (pings)
-  - Show conversations related to this job
+  - [x] Display all job details
+  - [ ] Show number of views (query count from interactions)
+  - [ ] Show list of interested workers (pings)
+  - [ ] Show conversations related to this job
 - [ ] Edit mode:
-  - All fields from B1 editable except job type
-  - Save button calls `updateJobPost(jobId, changes)`
-  - Success toast: "Job updated successfully!"
+  - [ ] All fields from B1 editable except job type
+  - [x] Save button calls `updateJobPost(jobId, changes)`
+  - [x] Success toast: "Job updated successfully!"
 - [ ] Close job button with confirmation modal
   - Status → 'closed'
   - No longer appears on worker job board
@@ -97,32 +97,32 @@ Enable employers to build and manage real profiles, create job postings that app
 ## Feature C: Job Visibility on Worker Side (Real-Time)
 
 ### C1 — Worker Job Board Reads Real Data
-- [ ] Update `/worker/jobs/page.tsx` to fetch real active job posts from Firestore
-- [ ] Fetch from `jobPosts` collection with filters:
+- [x] Update `/worker/jobs/page.tsx` to fetch real active job posts from Firestore
+- [x] Fetch from `jobPosts` collection with filters:
   - `where('status', '==', 'active')`
   - `orderBy('postedAt', 'desc')`
-- [ ] Display each job using existing `EmployeeJobCard` component
-- [ ] Search filters work on real data:
+- [x] Display each job using existing `EmployeeJobCard` component
+- [x] Search filters work on real data:
   - Search: title, description, company name (case-insensitive)
   - Skills: filter by requirements array
   - Location + Radius: use geospatial query or client-side distance calc
-- [ ] Real-time updates: `onSnapshot()` listener so new jobs appear immediately
-- [ ] Loading state while fetching
-- [ ] Empty state: "No jobs available in your area"
+- [x] Real-time updates: `onSnapshot()` listener so new jobs appear immediately
+- [x] Loading state while fetching
+- [x] Empty state: "No jobs available in your area"
 
 ### C2 — Filter & Search Optimization
-- [ ] Geospatial filtering logic:
+- [x] Geospatial filtering logic:
   - Get worker's location from `userDoc.location`
   - Filter radius: default 50km, adjustable 10-200km
   - Use `isWithinRange()` utility to check distance
 - [ ] Pagination or virtual scroll if many jobs (optional for MVP)
 - [ ] Debounced search input (300ms) to reduce queries
-- [ ] Apply filters client-side or via Firestore queries
+- [x] Apply filters client-side or via Firestore queries
 
 ### C3 — Real-Time Job Updates
-- [ ] When employer posts/updates job → worker job board refreshes automatically
-- [ ] When employer closes job → job disappears from worker board
-- [ ] Use `onSnapshot()` listener on `jobPosts` collection
+- [x] When employer posts/updates job → worker job board refreshes automatically
+- [x] When employer closes job → job disappears from worker board
+- [x] Use `onSnapshot()` listener on `jobPosts` collection
 - [ ] Handle connection/reconnection smoothly
 
 ---
@@ -130,68 +130,68 @@ Enable employers to build and manage real profiles, create job postings that app
 ## Feature D: Worker Interaction - Ping & Messaging
 
 ### D1 — Ping System (Reuse/Verify)
-- [ ] Worker clicks "Interested" on job card → `sendPing(workerId, jobPostId, employerId, jobTitle)`
-- [ ] Firestore creates entry in `pings/{pingId}` with:
+- [x] Worker clicks "Interested" on job card → `sendPing(workerId, jobPostId, employerId, jobTitle)`
+- [x] Firestore creates entry in `pings/{pingId}` with:
   - workerId, jobPostId, employerId, jobTitle
   - Status: 'pending'
   - createdAt: ISO timestamp
-- [ ] On success:
-  - `getOrCreateConversation()` called automatically
-  - Toast: "You've expressed interest!"
-  - Redirect to `/worker/messages/{conversationId}` after 1-2 second delay
+- [x] On success:
+  - [x] `getOrCreateConversation()` called automatically
+  - [x] Toast: "You've expressed interest!"
+  - [x] Redirect to `/worker/messages/{conversationId}` after 1-2 second delay
 - [ ] Prevent duplicate pings (check if already pinged this job)
-- [ ] Loading spinner during ping submission
+- [x] Loading spinner during ping submission
 
 ### D2 — Employer Receives Ping (Dashboard Alert)
-- [ ] Add "Pings" section to `/dashboard` home showing recent pings
-- [ ] Display: Worker name, avatar, job title, "View Worker" link
+- [x] Add "Pings" section to `/dashboard` home showing recent pings
+- [x] Display: Worker name, avatar, job title, "View Worker" link
 - [ ] Click "View Worker" → navigate to worker's profile or messaging thread
 - [ ] Real-time updates: new pings appear immediately via `onSnapshot()`
 - [ ] Optional: Bell icon with unread count
 
 ### D3 — Conversation Creation from Ping
-- [ ] When worker pings, `getOrCreateConversation()` called
-- [ ] Conversation created with:
-  - workerId, workerName
-  - employerId, employerName
-  - jobPostId, jobTitle (from ping context)
-- [ ] Both parties can see conversation in their message list
-- [ ] First message optional (worker can message employer or wait for response)
+- [x] When worker pings, `getOrCreateConversation()` called
+- [x] Conversation created with:
+  - [x] workerId, workerName
+  - [x] employerId, employerName
+  - [x] jobPostId, jobTitle (from ping context)
+- [x] Both parties can see conversation in their message list
+- [x] First message optional (worker can message employer or wait for response)
 
 ---
 
 ## Feature E: Bidirectional Messaging
 
 ### E1 — Employer Message List (`/dashboard/messages`)
-- [ ] Fetch `getUserConversations(uid, 'employer')`
-- [ ] Display all conversations with workers
-- [ ] For each conversation show:
+- [x] Fetch `getUserConversations(uid, 'employer')`
+- [x] Display all conversations with workers
+- [x] For each conversation show:
   - Worker name and avatar
   - Job title (if applicable)
   - Last message preview + timestamp
   - Unread indicator (bold name + dot if unread by employer)
-- [ ] Sort by: Most Recent, Unread First
-- [ ] Click conversation → `/dashboard/messages/{conversationId}`
-- [ ] Real-time updates via `subscribeToConversations()`
-- [ ] Empty state: "No messages yet"
+- [x] Sort by: Most Recent, Unread First
+- [x] Click conversation → `/dashboard/messages/{conversationId}`
+- [x] Real-time updates via `subscribeToConversations()`
+- [x] Empty state: "No messages yet"
 
 ### E2 — Employer Chat View (`/dashboard/messages/[conversationId]`)
-- [ ] Fetch `getConversation(conversationId)` + worker profile
-- [ ] Render `MessageThread` with:
+- [x] Fetch `getConversation(conversationId)` + worker profile
+- [x] Render `MessageThread` with:
   - Worker name and avatar at top
   - Job title if conversation has one
   - Messages displayed chronologically
-- [ ] Send message input (reuse existing UI)
-- [ ] Mark messages as seen when employer reads them
-- [ ] Back button → `/dashboard/messages`
-- [ ] Real-time message updates via `subscribeToMessages()`
+- [x] Send message input (reuse existing UI)
+- [x] Mark messages as seen when employer reads them
+- [x] Back button → `/dashboard/messages`
+- [x] Real-time message updates via `subscribeToMessages()`
 
 ### E3 — Worker Messaging (Verify Already Working)
-- [ ] Verify `/worker/messages` shows all conversations
-- [ ] Verify `/worker/messages/[id]` chat works both ways
-- [ ] Test: Worker messages employer → appears in real-time on employer side
-- [ ] Test: Employer messages worker → appears in real-time on worker side
-- [ ] Mark seen receipts work both directions
+- [x] Verify `/worker/messages` shows all conversations
+- [x] Verify `/worker/messages/[id]` chat works both ways
+- [x] Test: Worker messages employer → appears in real-time on employer side
+- [x] Test: Employer messages worker → appears in real-time on worker side
+- [x] Mark seen receipts work both directions
 
 ---
 
@@ -220,30 +220,30 @@ Enable employers to build and manage real profiles, create job postings that app
 ## Feature G: Dashboard Home & Navigation
 
 ### G1 — Employer Dashboard Home (`/dashboard`)
-- [ ] Display welcome message: "Welcome, [Employer Name]!"
-- [ ] Show quick stats:
+- [x] Display welcome message: "Welcome, [Employer Name]!"
+- [x] Show quick stats:
   - Jobs posted (count)
   - Active conversations
   - Unread messages count
   - Pings received (this month)
-- [ ] Recent pings widget (last 5 workers interested)
-- [ ] Recent messages widget (last 5 conversations)
-- [ ] Quick action buttons:
+- [x] Recent pings widget (last 5 workers interested)
+- [x] Recent messages widget (last 5 conversations)
+- [x] Quick action buttons:
   - "Post New Job" → `/dashboard/post-job`
   - "View My Jobs" → `/dashboard/my-jobs`
   - "View Messages" → `/dashboard/messages`
   - "Edit Profile" → `/dashboard/profile`
 
 ### G2 — Employer Navigation/Layout
-- [ ] Sidebar (desktop) / Bottom nav (mobile) with links to:
+- [x] Sidebar (desktop) / Bottom nav (mobile) with links to:
   - Home (`/dashboard`)
   - Post Job (`/dashboard/post-job`)
   - My Jobs (`/dashboard/my-jobs`)
   - Messages (`/dashboard/messages`)
   - Profile (`/dashboard/profile`)
-- [ ] Show user name and role badge
-- [ ] Logout button
-- [ ] Subscription tier display
+- [x] Show user name and role badge
+- [x] Logout button
+- [x] Subscription tier display
 
 ### G3 — Employer Job Card Component
 - [ ] Create/reuse component to display job in "My Jobs" list
@@ -268,44 +268,44 @@ Enable employers to build and manage real profiles, create job postings that app
 ### End-to-End Flow: Employer Creates Job → Worker Finds & Pings → Conversation Starts
 
 1. **Employer Setup**
-   - [ ] Employer signs up with role='employer'
-   - [ ] Redirected to `/dashboard/setup`
-   - [ ] Completes profile (company name, location, etc.)
-   - [ ] Profile saved to Firestore
-   - [ ] Redirected to `/dashboard` home
+  - [x] Employer signs up with role='employer'
+  - [x] Redirected to `/dashboard/setup`
+  - [x] Completes profile (company name, location, etc.)
+  - [x] Profile saved to Firestore
+  - [x] Redirected to `/dashboard` home
 
 2. **Job Posting**
-   - [ ] Employer navigates to `/dashboard/post-job`
-   - [ ] Fills job form (title, description, requirements, location, salary)
-   - [ ] Submits → job created in Firestore
-   - [ ] Job appears in `/dashboard/my-jobs` immediately
-   - [ ] Toast: "Job posted successfully!"
+  - [x] Employer navigates to `/dashboard/post-job`
+  - [x] Fills job form (title, description, requirements, location, salary)
+  - [x] Submits → job created in Firestore
+  - [x] Job appears in `/dashboard/my-jobs` immediately
+  - [x] Toast: "Job posted successfully!"
 
 3. **Worker Discovers Job**
-   - [ ] Worker navigates to `/worker/jobs`
-   - [ ] New employer job appears in real-time (within 1-2 seconds)
-   - [ ] Job is filterable by location, skills, search text
-   - [ ] Worker can view job details at `/worker/jobs/[id]`
+  - [x] Worker navigates to `/worker/jobs`
+  - [x] New employer job appears in real-time (within 1-2 seconds)
+  - [x] Job is filterable by location, skills, search text
+  - [x] Worker can view job details at `/worker/jobs/[id]`
 
 4. **Worker Pings Job**
-   - [ ] Worker clicks "Interested" button
-   - [ ] `sendPing()` called, ping created in Firestore
-   - [ ] `getOrCreateConversation()` creates conversation
-   - [ ] Toast: "You've expressed interest!"
-   - [ ] Redirected to `/worker/messages/{conversationId}`
+  - [x] Worker clicks "Interested" button
+  - [x] `sendPing()` called, ping created in Firestore
+  - [x] `getOrCreateConversation()` creates conversation
+  - [x] Toast: "You've expressed interest!"
+  - [x] Redirected to `/worker/messages/{conversationId}`
 
 5. **Employer Receives Ping**
-   - [ ] Ping appears in `/dashboard` "Recent Pings" widget immediately
-   - [ ] Employer sees worker name and job title
-   - [ ] Conversation appears in `/dashboard/messages` list
+  - [x] Ping appears in `/dashboard` "Recent Pings" widget immediately
+  - [x] Employer sees worker name and job title
+  - [x] Conversation appears in `/dashboard/messages` list
 
 6. **Messaging Verification**
-   - [ ] Worker types message in chat and sends
-   - [ ] Message appears in real-time on employer's screen
-   - [ ] Employer types reply
-   - [ ] Message appears in real-time on worker's screen
-   - [ ] Seen receipts work both ways
-   - [ ] Unread indicators update live
+  - [x] Worker types message in chat and sends
+  - [x] Message appears in real-time on employer's screen
+  - [x] Employer types reply
+  - [x] Message appears in real-time on worker's screen
+  - [x] Seen receipts work both ways
+  - [x] Unread indicators update live
 
 ### Performance & Edge Cases
 - [ ] Geospatial filtering works correctly (10-200km range)

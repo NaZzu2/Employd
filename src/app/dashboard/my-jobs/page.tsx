@@ -1,94 +1,72 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Plus, Briefcase, MapPin, Clock, DollarSign, MoreVertical, Eye, EyeOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Plus, Briefcase, MapPin, Clock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { JobPostForm } from '@/components/dashboard/job-post-form';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/lib/auth-context';
-import { updateJobPostStatus } from '@/lib/firestore';
+import { getEmployerJobPosts, updateJobPostStatus } from '@/lib/firestore';
 import { timeAgo } from '@/lib/utils';
 import type { JobPost } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
-// Mock data for UI preview before Firebase
-const MOCK_JOBS: JobPost[] = [
-  {
-    id: 'j1',
-    employerId: 'mock',
-    employerName: 'AquaFlow Plumbing',
-    companyName: 'AquaFlow Plumbing',
-    title: 'Licensed Plumber',
-    location: { lat: 40.71, lng: -74.01, address: 'New York, NY' },
-    type: 'Full-time',
-    salary: '$75,000 - $90,000/year',
-    description: 'Seeking a licensed plumber for residential and commercial projects.',
-    requirements: ['Valid plumbing license', '5+ years of experience'],
-    status: 'active',
-    postedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-];
-
 export default function MyJobsPage() {
   const { userDoc } = useAuth();
   const { toast } = useToast();
-  const [jobs, setJobs] = useState<JobPost[]>(MOCK_JOBS);
-  const [showForm, setShowForm] = useState(false);
+  const [jobs, setJobs] = useState<JobPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userDoc?.uid) return;
+    getEmployerJobPosts(userDoc.uid)
+      .then(setJobs)
+      .catch((error) => console.error(error))
+      .finally(() => setLoading(false));
+  }, [userDoc?.uid]);
 
   const handleToggleStatus = async (job: JobPost) => {
     const next = job.status === 'active' ? 'closed' : 'active';
     try {
       await updateJobPostStatus(job.id, next);
-      setJobs((prev) =>
-        prev.map((j) => (j.id === job.id ? { ...j, status: next } : j)),
-      );
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+      setJobs((prev) => prev.map((item) => (item.id === job.id ? { ...item, status: next } : item)));
+      toast({ title: 'Job updated', description: `Listing marked ${next}.` });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error?.message ?? 'Unable to update listing.' });
     }
   };
 
-  const handleJobCreated = (job: JobPost) => {
-    setJobs((prev) => [job, ...prev]);
-    setShowForm(false);
-    toast({ title: 'Job posted!', description: `"${job.title}" is now live.` });
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">My Jobs</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Manage your job postings.
-          </p>
+          <p className="text-muted-foreground text-sm mt-1">Manage your job postings.</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Post a Job
+        <Button asChild className="gap-2">
+          <Link href="/dashboard/post-job">
+            <Plus className="h-4 w-4" />
+            Post a Job
+          </Link>
         </Button>
       </div>
 
-      {/* Job list */}
       {jobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3 border rounded-xl">
           <Briefcase className="h-10 w-10 opacity-30" />
           <p>No job posts yet. Create your first listing!</p>
-          <Button onClick={() => setShowForm(true)} variant="outline">
-            Post a Job
+          <Button asChild variant="outline">
+            <Link href="/dashboard/post-job">Post a Job</Link>
           </Button>
         </div>
       ) : (
@@ -99,19 +77,10 @@ export default function MyJobsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <Badge
-                        variant={job.status === 'active' ? 'default' : 'secondary'}
-                        className={
-                          job.status === 'active'
-                            ? 'bg-accent/15 text-accent border-accent/30'
-                            : ''
-                        }
-                      >
+                      <Badge variant={job.status === 'active' ? 'default' : 'secondary'} className={job.status === 'active' ? 'bg-accent/15 text-accent border-accent/30' : ''}>
                         {job.status === 'active' ? 'Live' : 'Closed'}
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {job.type}
-                      </Badge>
+                      <Badge variant="outline" className="text-xs">{job.type}</Badge>
                     </div>
                     <CardTitle className="text-base">{job.title}</CardTitle>
                     <CardDescription>{job.companyName}</CardDescription>
@@ -120,19 +89,21 @@ export default function MyJobsPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                        <MoreVertical className="h-4 w-4" />
+                        <Eye className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link href={`/dashboard/my-jobs/${job.id}`}>View details</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/dashboard/my-jobs/${job.id}/edit`}>Edit</Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleToggleStatus(job)}>
                         {job.status === 'active' ? (
-                          <>
-                            <EyeOff className="h-4 w-4 mr-2" /> Close listing
-                          </>
+                          <><EyeOff className="h-4 w-4 mr-2" /> Close listing</>
                         ) : (
-                          <>
-                            <Eye className="h-4 w-4 mr-2" /> Re-open listing
-                          </>
+                          <><Eye className="h-4 w-4 mr-2" /> Re-open listing</>
                         )}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -146,10 +117,6 @@ export default function MyJobsPage() {
                   {job.location.address}
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <DollarSign className="h-3.5 w-3.5" />
-                  {job.salary}
-                </div>
-                <div className="flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5" />
                   Posted {timeAgo(job.postedAt)}
                 </div>
@@ -158,22 +125,6 @@ export default function MyJobsPage() {
           ))}
         </div>
       )}
-
-      {/* Job post form dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Post a New Job</DialogTitle>
-          </DialogHeader>
-          {userDoc && (
-            <JobPostForm
-              employer={userDoc}
-              onSuccess={handleJobCreated}
-              onCancel={() => setShowForm(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

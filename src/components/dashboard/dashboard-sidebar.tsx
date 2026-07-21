@@ -32,7 +32,9 @@ import { threadsRemaining } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/dashboard', icon: Users, label: 'Worker Board', exact: true },
+  { href: '/dashboard', icon: Users, label: 'Dashboard Home', exact: true },
+  { href: '/dashboard/setup', icon: User, label: 'Setup Profile' },
+  { href: '/dashboard/post-job', icon: Briefcase, label: 'Post Job' },
   { href: '/dashboard/my-jobs', icon: Briefcase, label: 'My Jobs' },
   { href: '/dashboard/pings', icon: Bell, label: 'Pings' },
   { href: '/dashboard/messages', icon: MessageSquare, label: 'Messages' },

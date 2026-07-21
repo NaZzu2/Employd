@@ -1,53 +1,19 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  Search,
-  Filter,
-  SortAsc,
-  MapPin,
-  UserCheck,
-  Star,
-  Zap,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { WorkerCard } from '@/components/dashboard/worker-card';
+import { Briefcase, MessageSquare, MapPin, Bell, Loader2, Plus, UserRound } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import { getAllWorkerProfiles, getOrCreateConversation, createContract, findExistingConversation } from '@/lib/firestore';
-import { isWithinRange, haversineDistanceKm, canStartThread, threadsRemaining } from '@/lib/utils';
-import type { WorkerProfile } from '@/lib/types';
-import { THREAD_LIMITS } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
+import { getEmployerProfile, getEmployerJobPosts, getEmployerPings, getUserConversations } from '@/lib/firestore';
+import { hasValidConfig } from '@/lib/firebase';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { UpgradePrompt } from '@/components/shared/upgrade-prompt';
-import { useEffect } from 'react';
-
-type SortMode = 'available' | 'rating' | 'badges';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import type { EmployerProfile, JobPost, Conversation, Ping } from '@/lib/types';
 
 // ─── Mock data (used when Firebase is not configured) ────────────────────────
 const MOCK_WORKERS: WorkerProfile[] = [
@@ -148,241 +114,235 @@ export default function WorkerBoardPage() {
   // Message loading state — tracks which worker card button is loading
   const [messagingWorkerId, setMessagingWorkerId] = useState<string | null>(null);
 
-  // Upgrade limit dialog state
-  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  export default function DashboardPage() {
+    const { userDoc } = useAuth();
+    const router = useRouter();
+    const { toast } = useToast();
 
-  // Load workers from Firestore
-  useEffect(() => {
-    getAllWorkerProfiles()
-      .then((data) => {
-        if (data && data.length > 0) {
-          setWorkers(data);
+    const [loading, setLoading] = useState(true);
+    const [profile, setProfile] = useState<EmployerProfile | null>(null);
+    const [jobs, setJobs] = useState<JobPost[]>([]);
+    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [pings, setPings] = useState<Ping[]>([]);
+
+    useEffect(() => {
+      if (!userDoc?.uid) return;
+
+      const load = async () => {
+        try {
+          if (!hasValidConfig) {
+            setLoading(false);
+            return;
+          }
+
+          const employerProfile = await getEmployerProfile(userDoc.uid);
+          if (!employerProfile) {
+            router.replace('/dashboard/setup');
+            return;
+          }
+
+          const [jobPosts, employerConversations, employerPings] = await Promise.all([
+            getEmployerJobPosts(userDoc.uid),
+            getUserConversations(userDoc.uid, 'employer'),
+            getEmployerPings(userDoc.uid),
+          ]);
+
+          setProfile(employerProfile);
+          setJobs(jobPosts);
+          setConversations(employerConversations);
+          setPings(employerPings);
+        } catch (error) {
+          console.error(error);
+          toast({
+            variant: 'destructive',
+            title: 'Unable to load dashboard',
+            description: 'Please refresh and try again.',
+          });
+        } finally {
+          setLoading(false);
         }
-      })
-      .catch(console.error)
-      .finally(() => setWorkersLoading(false));
-  }, []);
+      };
 
-  // ── Filter & sort ───────────────────────────────────────────────────────────
-  const userLat = userDoc?.location?.lat;
-  const userLng = userDoc?.location?.lng;
+      load();
+    }, [router, toast, userDoc?.uid]);
 
-  const filtered = workers
-    .filter((w) => {
-      const q = search.toLowerCase();
-      const matchesSearch =
-        !q ||
-        w.displayName.toLowerCase().includes(q) ||
-        w.title.toLowerCase().includes(q) ||
-        w.location?.address.toLowerCase().includes(q) ||
-        w.skills.some((s) => s.toLowerCase().includes(q));
+    const stats = useMemo(() => {
+      const activeJobs = jobs.filter((job) => job.status === 'active').length;
+      const unreadMessages = conversations.filter((conversation) => conversation.lastMessageSeen === false).length;
+      const pendingPings = pings.filter((ping) => ping.status === 'pending').length;
 
-      const matchesRange =
-        !filterByRange ||
-        !userLat ||
-        !userLng ||
-        !w.location ||
-        isWithinRange(userLat, userLng, w.location.lat, w.location.lng, radius);
+      return { activeJobs, unreadMessages, pendingPings };
+    }, [jobs, conversations, pings]);
 
-      return matchesSearch && matchesRange;
-    })
-    .sort((a, b) => {
-      if (sort === 'available') {
-        if (a.isLookingForWork !== b.isLookingForWork)
-          return a.isLookingForWork ? -1 : 1;
-        return b.averageRating - a.averageRating;
-      }
-      if (sort === 'rating') return b.averageRating - a.averageRating;
-      if (sort === 'badges') {
-        const sumA = Object.values(a.badgeCounts).reduce((s, n) => s + n, 0);
-        const sumB = Object.values(b.badgeCounts).reduce((s, n) => s + n, 0);
-        return sumB - sumA;
-      }
-      return 0;
-    });
-
-  // ── Conversation ────────────────────────────────────────────────────────────
-  const handleStartConversation = async (worker: WorkerProfile) => {
-    if (!userDoc) return;
-    setMessagingWorkerId(worker.uid);
-    try {
-      const existing = await findExistingConversation(userDoc.uid, worker.uid);
-      if (!existing && !canStartThread(userDoc.subscriptionTier, userDoc.monthlyThreadsStarted)) {
-        setShowUpgradeDialog(true);
-        return;
-      }
-
-      const { conversationId, isNew } = await getOrCreateConversation(
-        userDoc,
-        worker.uid,
-        worker.displayName,
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
       );
-      if (isNew) {
-        const remaining = threadsRemaining(userDoc.subscriptionTier, userDoc.monthlyThreadsStarted + 1);
-        const remainingText =
-          remaining === 'unlimited' ? '' : ` (${remaining} of ${THREAD_LIMITS[userDoc.subscriptionTier]} chats remaining this month)`;
-        toast({
-          title: 'Conversation started',
-          description: `Chat with ${worker.displayName} opened.${remainingText}`,
-        });
-      }
-      router.push(`/dashboard/messages/${conversationId}`);
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Could not start conversation', description: err.message });
-    } finally {
-      setMessagingWorkerId(null);
     }
-  };
 
-  // ── Hire ────────────────────────────────────────────────────────────────────
-  const handleMarkHired = (worker: WorkerProfile) => setHireTarget(worker);
-
-  const confirmHire = async () => {
-    if (!userDoc || !hireTarget) return;
-    setHiring(true);
-    try {
-      await createContract({
-        employerId: userDoc.uid,
-        employerName: userDoc.displayName,
-        workerId: hireTarget.uid,
-        workerName: hireTarget.displayName,
-        jobPostId: '',
-        jobTitle: hireTarget.title,
-      });
-      toast({
-        title: '🎉 Hire request sent!',
-        description: `${hireTarget.displayName} will be notified to accept.`,
-      });
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
-    } finally {
-      setHiring(false);
-      setHireTarget(null);
+    if (!profile && hasValidConfig) {
+      return null;
     }
-  };
 
-  const distanceTo = (w: WorkerProfile) => {
-    if (!userLat || !userLng || !w.location) return undefined;
-    return haversineDistanceKm(userLat, userLng, w.location.lat, w.location.lng);
-  };
-
-  return (
-    <>
+    return (
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold">Worker Board</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Browse available workers and find your next hire.
-          </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Welcome, {profile?.companyName ?? userDoc?.displayName ?? 'Employer'}</h1>
+            <p className="text-muted-foreground">Manage your company profile, job posts, pings, and conversations.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link href="/dashboard/profile">
+                <UserRound className="mr-2 h-4 w-4" />
+                Edit Profile
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/dashboard/post-job">
+                <Plus className="mr-2 h-4 w-4" />
+                Post Job
+              </Link>
+            </Button>
+          </div>
         </div>
 
-        {/* Controls */}
-        <div className="flex flex-wrap gap-3 items-end">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search name, location, skill, occupation…"
-              className="pl-8"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Active Jobs</CardDescription>
+              <CardTitle className="text-3xl">{stats.activeJobs}</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">Jobs currently visible to workers.</CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Unread Messages</CardDescription>
+              <CardTitle className="text-3xl">{stats.unreadMessages}</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">Conversations waiting for your reply.</CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Pending Pings</CardDescription>
+              <CardTitle className="text-3xl">{stats.pendingPings}</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">Workers interested in your jobs.</CardContent>
+          </Card>
+        </div>
 
-          {/* Sort */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <SortAsc className="h-4 w-4" />
-                Sort
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Sort workers by</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup value={sort} onValueChange={(v) => setSort(v as SortMode)}>
-                <DropdownMenuRadioItem value="available">
-                  <UserCheck className="h-4 w-4 mr-2" /> Available First
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="rating">
-                  <Star className="h-4 w-4 mr-2" /> Highest Rated
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="badges">
-                  <Zap className="h-4 w-4 mr-2" /> Most Badges
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Range filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant={filterByRange ? 'default' : 'outline'}
-                className="gap-2"
-              >
-                <MapPin className="h-4 w-4" />
-                {filterByRange ? `≤ ${radius} km` : 'Range'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 p-4">
-              <div className="space-y-4">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle>Company Profile</CardTitle>
+              <CardDescription>Your public employer profile</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-14 w-14">
+                  <AvatarImage src={profile?.avatarUrl} />
+                  <AvatarFallback>{profile?.companyName?.[0] ?? 'E'}</AvatarFallback>
+                </Avatar>
                 <div>
-                  <Label className="text-sm font-medium">Search radius: {radius} km</Label>
-                  <Slider
-                    min={10}
-                    max={500}
-                    step={10}
-                    value={[radius]}
-                    onValueChange={([v]) => setRadius(v)}
-                    className="mt-2"
-                  />
+                  <p className="font-semibold">{profile?.companyName}</p>
+                  <p className="text-sm text-muted-foreground">{profile?.industry}</p>
                 </div>
-                <Button
-                  variant={filterByRange ? 'destructive' : 'default'}
-                  size="sm"
-                  className="w-full"
-                  onClick={() => setFilterByRange((f) => !f)}
-                >
-                  {filterByRange ? 'Clear Range Filter' : 'Apply Range Filter'}
-                </Button>
-                {!userDoc?.location && filterByRange && (
-                  <p className="text-xs text-muted-foreground">
-                    Set your location in Profile to filter by range.
-                  </p>
-                )}
               </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <p className="text-sm text-muted-foreground">{profile?.description}</p>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4" />
+                {profile?.location.address}
+              </div>
+              <Badge variant="secondary">{userDoc?.subscriptionTier ?? 'free'} plan</Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Jump to the most common employer workflows</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-2">
+              <Button asChild variant="outline" className="justify-start">
+                <Link href="/dashboard/my-jobs">
+                  <Briefcase className="mr-2 h-4 w-4" />
+                  View My Jobs
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="justify-start">
+                <Link href="/dashboard/messages">
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  View Messages
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="justify-start">
+                <Link href="/dashboard/pings">
+                  <Bell className="mr-2 h-4 w-4" />
+                  View Pings
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="justify-start">
+                <Link href="/dashboard/profile">
+                  <UserRound className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Results count */}
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">{filtered.length} workers</Badge>
-          {filterByRange && (
-            <Badge variant="outline" className="text-xs">
-              <MapPin className="h-3 w-3 mr-1" /> Within {radius} km
-            </Badge>
-          )}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Pings</CardTitle>
+              <CardDescription>Workers interested in your jobs</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {pings.slice(0, 5).map((ping) => (
+                <div key={ping.id} className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <p className="font-medium">{ping.workerName}</p>
+                    <p className="text-sm text-muted-foreground">{ping.jobTitle}</p>
+                  </div>
+                  <Badge variant="outline">{ping.status}</Badge>
+                </div>
+              ))}
+              {pings.length === 0 && <p className="text-sm text-muted-foreground">No pings yet.</p>}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Messages</CardTitle>
+              <CardDescription>Conversation overview</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {conversations.slice(0, 5).map((conversation) => (
+                <Link key={conversation.id} href={`/dashboard/messages/${conversation.id}`} className="block rounded-lg border p-3 hover:bg-muted/50">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">{conversation.workerName}</p>
+                    <span className="text-xs text-muted-foreground">{conversation.lastMessageAt}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground truncate">{conversation.lastMessage || 'No messages yet'}</p>
+                </Link>
+              ))}
+              {conversations.length === 0 && <p className="text-sm text-muted-foreground">No conversations yet.</p>}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Worker grid */}
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
-            <Search className="h-10 w-10 opacity-30" />
-            <p>No workers found. Try adjusting your search or range filter.</p>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((worker) => (
-              <WorkerCard
-                key={worker.uid}
-                worker={worker}
-                distanceKm={distanceTo(worker)}
-                onStartConversation={handleStartConversation}
-                onMarkHired={handleMarkHired}
-                messagingLoading={messagingWorkerId === worker.uid}
+        <Separator />
+
+        <div className="flex justify-end gap-2">
+          <Button asChild variant="outline">
+            <Link href="/worker/jobs">Preview worker job board</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
               />
             ))}
           </div>

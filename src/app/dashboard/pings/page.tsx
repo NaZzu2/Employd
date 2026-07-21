@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Zap, MessageSquare, Clock, Briefcase, CheckCircle2, XCircle } from 'lucide-react';
+import { Zap, MessageSquare, Clock, Briefcase, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -17,76 +17,46 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import { updatePingStatus, startConversation } from '@/lib/firestore';
+import { updatePingStatus, startConversation, getEmployerPings } from '@/lib/firestore';
 import { canStartThread, timeAgo } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 import type { Ping } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
-const MOCK_PINGS: Ping[] = [
-  {
-    id: 'p1',
-    workerId: 'w1',
-    workerName: 'Alex Martinez',
-    workerTitle: 'Lead Carpenter',
-    jobPostId: 'j1',
-    jobTitle: 'Licensed Plumber',
-    employerId: 'emp1',
-    message: "I'm very interested in this role. I have 8 years of experience and am available immediately.",
-    status: 'pending',
-    createdAt: new Date(Date.now() - 1800000).toISOString(),
-  },
-  {
-    id: 'p2',
-    workerId: 'w2',
-    workerName: 'Sam Rivera',
-    workerTitle: 'Journeyman Electrician',
-    jobPostId: 'j1',
-    jobTitle: 'Licensed Plumber',
-    employerId: 'emp1',
-    message: "Would love to discuss this opportunity. I have relevant experience.",
-    status: 'pending',
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-  },
-];
-
 export default function PingsPage() {
   const { userDoc } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [pings, setPings] = useState<Ping[]>(MOCK_PINGS);
+  const [pings, setPings] = useState<Ping[]>([]);
   const [replyTarget, setReplyTarget] = useState<Ping | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userDoc?.uid) return;
+    getEmployerPings(userDoc.uid)
+      .then(setPings)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [userDoc?.uid]);
 
   const handleDecline = async (ping: Ping) => {
     await updatePingStatus(ping.id, 'declined');
-    setPings((prev) => prev.map((p) => (p.id === ping.id ? { ...p, status: 'declined' } : p)));
+    setPings((prev) => prev.map((item) => (item.id === ping.id ? { ...item, status: 'declined' } : item)));
   };
 
   const handleReply = async () => {
     if (!userDoc || !replyTarget) return;
     if (!canStartThread(userDoc.subscriptionTier, userDoc.monthlyThreadsStarted)) {
-      toast({
-        variant: 'destructive',
-        title: 'Thread limit reached',
-        description: 'Upgrade your plan to start more conversations.',
-      });
+      toast({ variant: 'destructive', title: 'Thread limit reached', description: 'Upgrade your plan to start more conversations.' });
       return;
     }
     try {
       await updatePingStatus(replyTarget.id, 'accepted');
-      const convId = await startConversation(
-        userDoc,
-        replyTarget.workerId,
-        replyTarget.workerName,
-        replyTarget.jobPostId,
-        replyTarget.jobTitle,
-      );
-      setPings((prev) =>
-        prev.map((p) => (p.id === replyTarget.id ? { ...p, status: 'accepted' } : p)),
-      );
+      const convId = await startConversation(userDoc, replyTarget.workerId, replyTarget.workerName, replyTarget.jobPostId, replyTarget.jobTitle);
+      setPings((prev) => prev.map((item) => (item.id === replyTarget.id ? { ...item, status: 'accepted' } : item)));
       router.push(`/dashboard/messages/${convId}`);
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error?.message ?? 'Unable to start conversation.' });
     } finally {
       setReplyTarget(null);
     }
@@ -94,6 +64,14 @@ export default function PingsPage() {
 
   const pending = pings.filter((p) => p.status === 'pending');
   const handled = pings.filter((p) => p.status !== 'pending');
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <>

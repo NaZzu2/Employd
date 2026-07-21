@@ -1,129 +1,161 @@
-import { userProfile } from '@/lib/data';
+"use client";
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2, MapPin } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import { THREAD_LIMITS } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { createEmployerProfile, getEmployerProfile, updateEmployerProfile } from '@/lib/firestore';
+import { hasValidConfig } from '@/lib/firebase';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Building, Calendar, GraduationCap, MapPin, Upload } from 'lucide-react';
-import { ProfileForm } from '@/components/dashboard/profile-form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import type { EmployerProfile } from '@/lib/types';
 
 export default function ProfilePage() {
     const { userDoc } = useAuth();
-  return (
-    <div className="grid gap-8 md:grid-cols-3">
-      <div className="grid auto-rows-max items-start gap-8 md:col-span-1">
-        <Card>
-          <CardHeader className="text-center">
-            <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-background ring-2 ring-primary">
-              <AvatarImage src={userProfile.avatarUrl} alt={userProfile.name} />
-              <AvatarFallback className="text-3xl">{userProfile.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <CardTitle className="text-2xl">{userProfile.name}</CardTitle>
-            <CardDescription className="text-base text-muted-foreground">{userProfile.title}</CardDescription>
-                        <div className="flex items-center justify-center gap-2 pt-2 text-sm text-muted-foreground">
-                                <MapPin className="h-4 w-4"/>
-                                {userProfile.location}
-                        </div>
-                        <div className="flex items-center justify-center gap-2 mt-2">
-                            {userDoc ? (
-                                <>
-                                    <Badge className={cn('text-sm font-medium', userDoc.subscriptionTier === 'free' ? 'bg-muted' : 'bg-accent/10')}>
-                                        {userDoc.subscriptionTier.charAt(0).toUpperCase() + userDoc.subscriptionTier.slice(1)} Plan
-                                    </Badge>
-                                    {userDoc.role === 'employer' && (
-                                        <div className="text-sm text-muted-foreground ml-2">
-                                            {userDoc.monthlyThreadsStarted} / {THREAD_LIMITS[userDoc.subscriptionTier]} chats used
-                                        </div>
-                                    )}
-                                </>
-                            ) : null}
-                        </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center text-muted-foreground">{userProfile.summary}</p>
-          </CardContent>
-          <CardFooter className="flex-col gap-2">
-            <Dialog>
-                <DialogTrigger asChild>
-                    <Button className="w-full">Edit Profile</Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>Edit Your Profile</DialogTitle>
-                    </DialogHeader>
-                    <ProfileForm profile={userProfile} />
-                </DialogContent>
-            </Dialog>
-            <Button variant="outline" className="w-full">
-                <Upload className="mr-2 h-4 w-4" />
-                Upload CV
-            </Button>
-          </CardFooter>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Skills</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-                {userProfile.skills.map((skill) => (
-                    <Badge key={skill} variant="secondary">{skill}</Badge>
-                ))}
-            </CardContent>
-        </Card>
-      </div>
+    const router = useRouter();
+    const { toast } = useToast();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [profile, setProfile] = useState<EmployerProfile | null>(null);
 
-      <div className="grid auto-rows-max items-start gap-8 md:col-span-2">
-        <Card>
-            <CardHeader>
-                <CardTitle>Work Experience</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                {userProfile.experience.map((exp, index) => (
-                    <div key={index} className="relative">
-                        <div className="flex gap-4">
-                            <div className="flex-shrink-0 pt-1">
-                                <Briefcase className="w-5 h-5 text-muted-foreground"/>
-                            </div>
-                            <div className="flex-grow">
-                                <h3 className="font-semibold">{exp.title}</h3>
-                                <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                    <Building className="h-3 w-3" /> {exp.company}
-                                </div>
-                                <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                                    <Calendar className="h-3 w-3" /> {exp.duration}
-                                </div>
-                                <p className="mt-2 text-sm text-muted-foreground">{exp.description}</p>
-                            </div>
+    useEffect(() => {
+        if (!userDoc?.uid) return;
+
+        const load = async () => {
+            try {
+                if (!hasValidConfig) {
+                    setLoading(false);
+                    return;
+                }
+                const employerProfile = await getEmployerProfile(userDoc.uid);
+                if (!employerProfile) {
+                    router.replace('/dashboard/setup');
+                    return;
+                }
+                setProfile(employerProfile);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        load();
+    }, [router, userDoc?.uid]);
+
+    const handleSave = async () => {
+        if (!userDoc || !profile) return;
+        setSaving(true);
+        try {
+            if (!hasValidConfig) {
+                toast({ title: 'Mock mode', description: 'Profile updates are disabled without Firebase.' });
+                return;
+            }
+            await updateEmployerProfile(userDoc.uid, profile);
+            toast({ title: 'Profile updated successfully!' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Failed to update profile', description: error?.message ?? 'Try again.' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading || !profile) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-3xl space-y-6">
+            <div>
+                <h1 className="text-2xl font-bold tracking-tight">Employer Profile</h1>
+                <p className="text-muted-foreground">Manage the company information workers see.</p>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Company Details</CardTitle>
+                    <CardDescription>Update your public employer profile.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label>Company Name</Label>
+                            <Input value={profile.companyName} onChange={(e) => setProfile({ ...profile, companyName: e.target.value })} />
                         </div>
-                        {index < userProfile.experience.length - 1 && <Separator className="mt-6" />}
+                        <div className="space-y-2">
+                            <Label>Industry</Label>
+                            <Input value={profile.industry} onChange={(e) => setProfile({ ...profile, industry: e.target.value })} />
+                        </div>
                     </div>
-                ))}
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Education</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                {userProfile.education.map((edu, index) => (
-                    <div key={index} className="flex gap-4">
-                        <div className="flex-shrink-0 pt-1">
-                            <GraduationCap className="w-5 h-5 text-muted-foreground"/>
+
+                    <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Textarea value={profile.description} onChange={(e) => setProfile({ ...profile, description: e.target.value })} rows={5} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Address</Label>
+                        <Input
+                            value={profile.location.address}
+                            onChange={(e) => setProfile({ ...profile, location: { ...profile.location, address: e.target.value } })}
+                        />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label>Latitude</Label>
+                            <Input
+                                type="number"
+                                value={profile.location.lat}
+                                onChange={(e) => setProfile({ ...profile, location: { ...profile.location, lat: Number(e.target.value) || 0 } })}
+                            />
                         </div>
-                        <div className="flex-grow">
-                            <h3 className="font-semibold">{edu.degree}</h3>
-                            <p className="text-sm text-muted-foreground">{edu.institution}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{edu.year}</p>
+                        <div className="space-y-2">
+                            <Label>Longitude</Label>
+                            <Input
+                                type="number"
+                                value={profile.location.lng}
+                                onChange={(e) => setProfile({ ...profile, location: { ...profile.location, lng: Number(e.target.value) || 0 } })}
+                            />
                         </div>
                     </div>
-                ))}
-            </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+
+                    <div className="space-y-2">
+                        <Label>Website</Label>
+                        <Input value={profile.website ?? ''} onChange={(e) => setProfile({ ...profile, website: e.target.value })} />
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary">Plan: {userDoc?.subscriptionTier ?? 'free'}</Badge>
+                        <Badge variant="outline">Ratings: {profile.averageRating.toFixed(1)} / {profile.reviewCount}</Badge>
+                    </div>
+
+                    <Button onClick={handleSave} disabled={saving}>
+                        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Save Changes
+                    </Button>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Profile Preview</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        {profile.location.address}
+                    </div>
+                    <p>{profile.description}</p>
+                </CardContent>
+            </Card>
+        </div>
+    );
 }

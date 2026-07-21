@@ -16,6 +16,7 @@ import {
   writeBatch,
   onSnapshot,
   type Unsubscribe,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type {
@@ -85,6 +86,10 @@ export async function toggleLookingForWork(uid: string, value: boolean) {
 }
 
 // ─── Employer Profiles ───────────────────────────────────────────────────────
+export async function createEmployerProfile(uid: string, profile: EmployerProfile) {
+  await setDoc(doc(db, 'employerProfiles', uid), profile);
+}
+
 
 export async function getEmployerProfile(uid: string): Promise<EmployerProfile | null> {
   const snap = await getDoc(doc(db, 'employerProfiles', uid));
@@ -118,6 +123,10 @@ export async function getJobPost(id: string): Promise<JobPost | null> {
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as JobPost) : null;
 }
 
+export async function updateJobPost(id: string, data: Partial<Omit<JobPost, 'id' | 'postedAt'>>) {
+  await updateDoc(doc(db, 'jobPosts', id), data);
+}
+
 export async function getEmployerJobPosts(employerId: string): Promise<JobPost[]> {
   const snap = await getDocs(
     query(
@@ -138,6 +147,19 @@ export async function getActiveJobPosts(): Promise<JobPost[]> {
     ),
   );
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost));
+}
+
+export function subscribeToActiveJobPosts(
+  onChange: (jobs: JobPost[]) => void,
+): Unsubscribe {
+  return onSnapshot(
+    query(
+      collection(db, 'jobPosts'),
+      where('status', '==', 'active'),
+      orderBy('postedAt', 'desc'),
+    ),
+    (snap) => onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost))),
+  );
 }
 
 export async function updateJobPostStatus(id: string, status: 'active' | 'closed') {

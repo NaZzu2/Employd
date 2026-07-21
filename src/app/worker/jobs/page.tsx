@@ -9,7 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/lib/auth-context';
-import { getActiveJobPosts } from '@/lib/firestore';
+import { getActiveJobPosts, subscribeToActiveJobPosts } from '@/lib/firestore';
 import { hasValidConfig } from '@/lib/firebase';
 import { FINNISH_JOB_POSTS } from '@/lib/data';
 import { isWithinRange } from '@/lib/utils';
@@ -46,8 +46,16 @@ export default function WorkerJobsPage() {
       if (active) setLoading(false);
     };
     loadJobs();
+
+    const unsubscribe = hasValidConfig
+      ? subscribeToActiveJobPosts((liveJobs) => {
+          if (active) setJobs(liveJobs);
+        })
+      : undefined;
+
     return () => {
       active = false;
+      unsubscribe?.();
     };
   }, []);
 
