@@ -56,11 +56,11 @@ service cloud.firestore {
       allow update: if request.auth != null
         && (resource.data.employerId == request.auth.uid
             || resource.data.workerId == request.auth.uid);
-      // Only employers can START a new conversation
+      // Both employers and workers can START a new conversation
       allow create: if request.auth != null
-        && request.resource.data.employerId == request.auth.uid
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'employer';
-      // Workers cannot delete conversations
+        && (request.resource.data.employerId == request.auth.uid
+            || request.resource.data.workerId == request.auth.uid);
+      // Conversations cannot be deleted
       allow delete: if false;
 
       // Messages sub-collection

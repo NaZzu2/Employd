@@ -41,9 +41,9 @@ Build a bidirectional messaging platform where **employees can message employers
 - [x] Real-time updates work
 
 ### A6 — Firestore Security Rules
-- [ ] Ensure employees can create conversations with employers
-- [ ] Allow both parties to read/write messages
-- [ ] Allow either party to update `seenAt` on received messages
+- [x] Ensure employees can create conversations with employers
+- [x] Allow both parties to read/write messages
+- [x] Allow either party to update `seenAt` on received messages
 
 ---
 
@@ -107,9 +107,9 @@ Build a bidirectional messaging platform where **employees can message employers
   - Status: active
 
 ### B4 — Seed Jobs to Firestore
-- [ ] Use Firebase Admin SDK or manual console creation to insert 6 dummy job posts
-- [ ] Verify all jobs appear in employee job board (`/employee/jobs` or similar)
-- [ ] Verify jobs are searchable and filterable by skill/location
+- [x] Use Firebase Admin SDK or manual console creation to insert 6 dummy job posts
+- [x] Verify all jobs appear in employee job board (`/employee/jobs` or similar)
+- [x] Verify jobs are searchable and filterable by skill/location
 
 ---
 
@@ -154,7 +154,7 @@ Build a bidirectional messaging platform where **employees can message employers
   - `/employee/messages` (Conversations)
   - `/employee/reviews` (Reviews & Ratings)
   - `/employee/my-profile` (Profile)
-- [ ] Update sidebar for desktop if needed
+- [x] Update sidebar for desktop if needed
 
 ### D2 — Employee Profile Sidebar/Nav
 - [x] Show current user's role badge: "Employee"
@@ -167,17 +167,17 @@ Build a bidirectional messaging platform where **employees can message employers
 ## Feature E: Firestore Data Model Alignment
 
 ### E1 — Verify Collections & Documents
-- [ ] `users/{uid}` — role='employee' users exist or can be created
-- [ ] `jobPosts/{jobId}` — all 6 dummy jobs seeded correctly
-- [ ] `conversations/{convId}` — supports employee ↔ employer bidirectionally
-- [ ] `messages/{msgId}` — works for both directions
-- [ ] `pings/{pingId}` — employee can ping on job posts
+- [x] `users/{uid}` — role='employee' users exist or can be created
+- [x] `jobPosts/{jobId}` — all 6 dummy jobs seeded correctly
+- [x] `conversations/{convId}` — supports employee ↔ employer bidirectionally
+- [x] `messages/{msgId}` — works for both directions
+- [x] `pings/{pingId}` — employee can ping on job posts
 
 ### E2 — Firestore Security Rules
-- [ ] Employees can query active job posts
-- [ ] Employees can send pings on jobs
-- [ ] Employees can message employers
-- [ ] Employees cannot create job posts (only employers)
+- [x] Employees can query active job posts
+- [x] Employees can send pings on jobs
+- [x] Employees can message employers
+- [x] Employees cannot create job posts (only employers)
 
 ---
 
