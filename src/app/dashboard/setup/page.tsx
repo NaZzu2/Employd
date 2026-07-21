@@ -47,23 +47,29 @@ export default function EmployerSetupPage() {
     avatarUrl: '',
   });
 
-  // Check if profile already exists
+  // Check if profile already exists, but don't block rendering
+  // Just try to redirect if it exists
   useEffect(() => {
     if (!userDoc?.uid) return;
-    const checkProfile = async () => {
+    
+    const checkAndRedirect = async () => {
       try {
-        const existing = await getEmployerProfile(userDoc.uid);
-        if (existing) {
+        // Quick check with 1s timeout
+        const result = await Promise.race([
+          getEmployerProfile(userDoc.uid),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1000))
+        ]);
+        
+        if (result && typeof result === 'object' && (result as any).companyName) {
           router.replace('/dashboard');
         }
-      } catch (error) {
-        console.error('Error checking profile:', error);
-      } finally {
-        setCheckingProfile(false);
+      } catch {
+        // Silently fail and let form show
       }
     };
-    checkProfile();
-  }, [userDoc, router]);
+    
+    checkAndRedirect();
+  }, [userDoc?.uid, router]);
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({
@@ -136,14 +142,6 @@ export default function EmployerSetupPage() {
       setLoading(false);
     }
   };
-
-  if (checkingProfile) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-2xl mx-auto py-8">

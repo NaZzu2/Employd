@@ -189,17 +189,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updatedAt: now,
       });
     } else {
-      await setDoc(doc(db, 'employerProfiles', credential.user.uid), {
-        uid: credential.user.uid,
-        displayName,
-        companyName: '',
-        industry: '',
-        description: '',
-        badgeCounts: EMPTY_BADGE_COUNTS,
-        averageRating: 0,
-        reviewCount: 0,
-        updatedAt: now,
-      });
+      try {
+        const employerProfile = {
+          uid: credential.user.uid,
+          displayName,
+          companyName: '',
+          industry: '',
+          description: '',
+          badgeCounts: EMPTY_BADGE_COUNTS,
+          averageRating: 0,
+          reviewCount: 0,
+          updatedAt: now,
+        };
+        console.log('[Auth] Creating employer profile:', employerProfile);
+        await setDoc(doc(db, 'employerProfiles', credential.user.uid), employerProfile);
+        console.log('[Auth] Employer profile created successfully');
+      } catch (error) {
+        console.error('[Auth] Failed to create employer profile:', error);
+        throw error;
+      }
     }
 
     setUserDoc(newUser);

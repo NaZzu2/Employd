@@ -1,3 +1,4 @@
 {
-  "workbench.startupEditor": "readme"
+  "workbench.startupEditor": "readme",
+  "python-envs.defaultEnvManager": "ms-python.python:system"
 }

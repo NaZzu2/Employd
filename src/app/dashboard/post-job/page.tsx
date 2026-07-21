@@ -111,7 +111,6 @@ export default function PostJobPage() {
         description: formData.description.trim(),
         requirements: formData.requirements,
         status: 'active',
-        imageUrl: undefined,
       });
       toast({
         title: 'Job posted successfully!',

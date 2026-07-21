@@ -132,10 +132,10 @@ export async function getEmployerJobPosts(employerId: string): Promise<JobPost[]
     query(
       collection(db, 'jobPosts'),
       where('employerId', '==', employerId),
-      orderBy('postedAt', 'desc'),
     ),
   );
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost));
+  const jobs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost));
+  return jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
 }
 
 export async function getActiveJobPosts(): Promise<JobPost[]> {
@@ -143,10 +143,10 @@ export async function getActiveJobPosts(): Promise<JobPost[]> {
     query(
       collection(db, 'jobPosts'),
       where('status', '==', 'active'),
-      orderBy('postedAt', 'desc'),
     ),
   );
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost));
+  const jobs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost));
+  return jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
 }
 
 export function subscribeToActiveJobPosts(
@@ -156,9 +156,11 @@ export function subscribeToActiveJobPosts(
     query(
       collection(db, 'jobPosts'),
       where('status', '==', 'active'),
-      orderBy('postedAt', 'desc'),
     ),
-    (snap) => onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost))),
+    (snap) => {
+      const jobs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost));
+      onChange(jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()));
+    },
   );
 }
 
@@ -184,10 +186,10 @@ export async function getEmployerPings(employerId: string): Promise<Ping[]> {
     query(
       collection(db, 'pings'),
       where('employerId', '==', employerId),
-      orderBy('createdAt', 'desc'),
     ),
   );
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Ping));
+  const pings = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Ping));
+  return pings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export async function getWorkerPings(workerId: string): Promise<Ping[]> {
@@ -195,10 +197,10 @@ export async function getWorkerPings(workerId: string): Promise<Ping[]> {
     query(
       collection(db, 'pings'),
       where('workerId', '==', workerId),
-      orderBy('createdAt', 'desc'),
     ),
   );
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Ping));
+  const pings = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Ping));
+  return pings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export async function updatePingStatus(id: string, status: 'accepted' | 'declined') {

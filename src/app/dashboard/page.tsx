@@ -95,26 +95,7 @@ const MOCK_WORKERS: WorkerProfile[] = [
   },
 ];
 
-export default function WorkerBoardPage() {
-  const { userDoc } = useAuth();
-  const router = useRouter();
-  const { toast } = useToast();
-
-  const [workers, setWorkers] = useState<WorkerProfile[]>(MOCK_WORKERS);
-  const [workersLoading, setWorkersLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<SortMode>('available');
-  const [radius, setRadius] = useState(userDoc?.searchRadiusKm ?? 100);
-  const [filterByRange, setFilterByRange] = useState(false);
-
-  // Hire dialog state
-  const [hireTarget, setHireTarget] = useState<WorkerProfile | null>(null);
-  const [hiring, setHiring] = useState(false);
-
-  // Message loading state — tracks which worker card button is loading
-  const [messagingWorkerId, setMessagingWorkerId] = useState<string | null>(null);
-
-  export default function DashboardPage() {
+export default function DashboardPage() {
     const { userDoc } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
@@ -135,36 +116,56 @@ export default function WorkerBoardPage() {
             return;
           }
 
-          const employerProfile = await getEmployerProfile(userDoc.uid);
-          if (!employerProfile) {
-            router.replace('/dashboard/setup');
-            return;
+          console.log('[Dashboard] Loading for user:', userDoc.uid);
+          
+          // Create a timeout promise  
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error('Dashboard load timeout - check your Firestore connection')),
+              5000 // 5 second timeout
+            )
+          );
+
+          try {
+            const employerProfile = await Promise.race([
+              getEmployerProfile(userDoc.uid),
+              timeoutPromise as any,
+            ]);
+            
+            console.log('[Dashboard] Employer profile:', employerProfile);
+            
+            if (employerProfile) {
+              // Profile exists - load all data
+              const [jobPosts, employerConversations, employerPings] = await Promise.all([
+                getEmployerJobPosts(userDoc.uid).catch(() => []),
+                getUserConversations(userDoc.uid, 'employer').catch(() => []),
+                getEmployerPings(userDoc.uid).catch(() => []),
+              ]);
+
+              setProfile(employerProfile);
+              setJobs(jobPosts);
+              setConversations(employerConversations);
+              setPings(employerPings);
+            }
+          } catch (error: any) {
+            if (error.message?.includes('timeout')) {
+              console.warn('[Dashboard] Profile fetch timed out, allowing continued access');
+              // Don't fail - just continue without full data
+            } else {
+              throw error;
+            }
           }
-
-          const [jobPosts, employerConversations, employerPings] = await Promise.all([
-            getEmployerJobPosts(userDoc.uid),
-            getUserConversations(userDoc.uid, 'employer'),
-            getEmployerPings(userDoc.uid),
-          ]);
-
-          setProfile(employerProfile);
-          setJobs(jobPosts);
-          setConversations(employerConversations);
-          setPings(employerPings);
-        } catch (error) {
-          console.error(error);
-          toast({
-            variant: 'destructive',
-            title: 'Unable to load dashboard',
-            description: 'Please refresh and try again.',
-          });
+        } catch (error: any) {
+          console.error('[Dashboard] Error:', error);
+          // Don't show toast for non-critical errors, just log them
+          console.error('[Dashboard] Will render with limited data:', error?.message);
         } finally {
           setLoading(false);
         }
       };
 
       load();
-    }, [router, toast, userDoc?.uid]);
+    }, [userDoc?.uid]);
 
     const stats = useMemo(() => {
       const activeJobs = jobs.filter((job) => job.status === 'active').length;
@@ -176,14 +177,53 @@ export default function WorkerBoardPage() {
 
     if (loading) {
       return (
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading dashboard...</p>
         </div>
       );
     }
 
-    if (!profile && hasValidConfig) {
-      return null;
+    // Show setup prompt if no profile, but don't block everything
+    if (!profile) {
+      return (
+        <div className="space-y-6">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-amber-900 font-semibold mb-3">Complete Your Employer Profile</p>
+            <p className="text-amber-800 text-sm mb-4">
+              To start posting jobs and managing your hiring, please complete your employer profile setup.
+            </p>
+            <Button asChild>
+              <Link href="/dashboard/setup">Go to Profile Setup</Link>
+            </Button>
+          </div>
+
+          {/* Still show empty stats */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Active Jobs</CardDescription>
+                <CardTitle className="text-3xl">0</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">Jobs currently visible to workers.</CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Unread Messages</CardDescription>
+                <CardTitle className="text-3xl">0</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">Conversations waiting for your reply.</CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Pending Pings</CardDescription>
+                <CardTitle className="text-3xl">0</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">Workers interested in your jobs.</CardContent>
+            </Card>
+          </div>
+        </div>
+      );
     }
 
     return (
@@ -251,10 +291,12 @@ export default function WorkerBoardPage() {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">{profile?.description}</p>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4" />
-                {profile?.location.address}
-              </div>
+              {profile?.location?.address && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  {profile.location.address}
+                </div>
+              )}
               <Badge variant="secondary">{userDoc?.subscriptionTier ?? 'free'} plan</Badge>
             </CardContent>
           </Card>
@@ -342,55 +384,4 @@ export default function WorkerBoardPage() {
         </div>
       </div>
     );
-  }
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Hire confirmation dialog */}
-      <Dialog open={!!hireTarget} onOpenChange={() => setHireTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Mark as Hired</DialogTitle>
-            <DialogDescription>
-              You are about to send a hire request to{' '}
-              <strong>{hireTarget?.displayName}</strong>. They will be prompted to
-              accept or decline.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setHireTarget(null)}>
-              Cancel
-            </Button>
-            <Button onClick={confirmHire} disabled={hiring}>
-              {hiring ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Confirm Hire Request
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Upgrade limit dialog */}
-      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Monthly Chat Limit Reached</DialogTitle>
-            <DialogDescription>
-              You have used all of your monthly conversations on the Free plan. Upgrade your plan to start more chats with workers.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-2">
-            <UpgradePrompt reason="more_chats" />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowUpgradeDialog(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
 }

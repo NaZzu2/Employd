@@ -61,7 +61,7 @@ export function PingDialog({ job, open, onOpenChange, onPingSent }: PingDialogPr
         workerId: userDoc.uid,
         workerName: userDoc.displayName,
         workerTitle: '',       // filled from workerProfile in a real app
-        workerAvatarUrl: userDoc.avatarUrl,
+        ...(userDoc.avatarUrl && { workerAvatarUrl: userDoc.avatarUrl }),
         jobPostId: job.id,
         jobTitle: job.title,
         employerId: job.employerId,
