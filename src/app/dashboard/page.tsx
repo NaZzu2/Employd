@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import type { EmployerProfile, JobPost, Conversation, Ping } from '@/lib/types';
+import type { EmployerProfile, JobPost, Conversation, Ping, WorkerProfile } from '@/lib/types';
 
 // ─── Mock data (used when Firebase is not configured) ────────────────────────
 const MOCK_WORKERS: WorkerProfile[] = [
@@ -362,7 +362,12 @@ export default function DashboardPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
+              <div className="flex items-center justify-between gap-3">
               <CardTitle>Recent Pings</CardTitle>
+                <Button asChild variant="ghost" size="sm" className="h-8 px-2">
+                  <Link href="/dashboard/pings">View all</Link>
+                </Button>
+              </div>
               <CardDescription>Workers interested in your jobs</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -372,7 +377,12 @@ export default function DashboardPage() {
                     <p className="font-medium">{ping.workerName}</p>
                     <p className="text-sm text-muted-foreground">{ping.jobTitle}</p>
                   </div>
-                  <Badge variant="outline">{ping.status}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{ping.status}</Badge>
+                    <Button asChild size="sm" variant="ghost" className="h-8 px-2">
+                      <Link href="/dashboard/pings">View worker</Link>
+                    </Button>
+                  </div>
                 </div>
               ))}
               {pings.length === 0 && <p className="text-sm text-muted-foreground">No pings yet.</p>}

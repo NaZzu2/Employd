@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth-context';
-import { createJobPost } from '@/lib/firestore';
+import { createJobPost, getEmployerProfile } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { JobType } from '@/lib/types';
 
@@ -27,6 +27,20 @@ export default function PostJobPage() {
   const { userDoc } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [profileChecked, setProfileChecked] = useState(false);
+
+  // Guard: redirect to setup if employer profile is missing
+  useEffect(() => {
+    if (!userDoc?.uid) return;
+    getEmployerProfile(userDoc.uid).then((profile) => {
+      if (!profile) {
+        toast({ variant: 'destructive', title: 'Complete your profile first', description: 'Please set up your employer profile before posting a job.' });
+        router.replace('/dashboard/setup');
+      } else {
+        setProfileChecked(true);
+      }
+    }).catch(() => setProfileChecked(true));
+  }, [userDoc?.uid, router, toast]);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -131,6 +145,12 @@ export default function PostJobPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-8">
+      {!profileChecked ? (
+        <div className="flex items-center justify-center min-h-[40vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <>
       <Button variant="ghost" onClick={() => router.back()} className="mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back
@@ -299,6 +319,8 @@ export default function PostJobPage() {
           </form>
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }

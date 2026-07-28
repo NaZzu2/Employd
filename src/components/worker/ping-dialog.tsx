@@ -23,7 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { sendPing } from '@/lib/firestore';
+import { getWorkerPingForJob, sendPing } from '@/lib/firestore';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import type { JobPost } from '@/lib/types';
@@ -56,6 +56,15 @@ export function PingDialog({ job, open, onOpenChange, onPingSent }: PingDialogPr
     if (!userDoc) return;
     setLoading(true);
     try {
+      const existingPing = await getWorkerPingForJob(userDoc.uid, job.id);
+      if (existingPing) {
+        toast({
+          variant: 'destructive',
+          title: 'Already pinged',
+          description: 'You have already expressed interest in this job.',
+        });
+        return;
+      }
       await sendPing({
         workerId: userDoc.uid,
         workerName: userDoc.displayName,

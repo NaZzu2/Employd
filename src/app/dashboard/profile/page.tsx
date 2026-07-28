@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import type { EmployerProfile } from '@/lib/types';
+import { THREAD_LIMITS } from '@/lib/types';
 
 export default function ProfilePage() {
     const { userDoc } = useAuth();
@@ -134,6 +135,9 @@ export default function ProfilePage() {
 
                     <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary">Plan: {userDoc?.subscriptionTier ?? 'free'}</Badge>
+                        <Badge variant="outline">
+                          {userDoc?.monthlyThreadsStarted ?? 0} / {THREAD_LIMITS[userDoc?.subscriptionTier ?? 'free'] === Infinity ? '∞' : THREAD_LIMITS[userDoc?.subscriptionTier ?? 'free']} conversations used this month
+                        </Badge>
                         <Badge variant="outline">Ratings: {profile.averageRating.toFixed(1)} / {profile.reviewCount}</Badge>
                     </div>
 

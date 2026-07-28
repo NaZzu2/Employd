@@ -25,7 +25,7 @@ Enable employers to build and manage real profiles, create job postings that app
 ### A2 — Employer Profile Page (`/dashboard/profile`)
 - [x] Display current employer profile info
 - [x] Allow editing all fields from A1
-- [ ] Show subscription tier and monthly thread limit usage
+- [x] Show subscription tier and monthly thread limit usage
 - [x] Display average rating and review count (fetched from `users/{uid}`)
 - [ ] Button to upgrade subscription tier (optional flow)
 - [ ] Delete/Deactivate account option (optional for MVP)
@@ -36,7 +36,7 @@ Enable employers to build and manage real profiles, create job postings that app
 - [x] Check if employer has `employerProfiles/{uid}` on `/dashboard` load
 - [x] If missing, redirect to `/dashboard/setup`
 - [x] Allow skipping setup with "Skip for now" button (but show banner reminder)
-- [ ] Prevent posting jobs until profile is created
+- [x] Prevent posting jobs until profile is created
 
 ---
 
@@ -65,10 +65,10 @@ Enable employers to build and manage real profiles, create job postings that app
   - Job title, type, location
   - Posted date
   - Status badge (active/closed)
-  - [ ] Number of pings received
+  - [x] Number of pings received
   - [ ] Number of applications/conversations
-- [ ] Sort by: Most Recent, Most Pings, Active Status
-- [ ] Filter by status: All, Active, Closed
+- [x] Sort by: Most Recent, Most Pings, Active Status
+- [x] Filter by status: All, Active, Closed
 - [x] Actions per job:
   - "View Details" → `/dashboard/my-jobs/[id]`
   - "Edit" → `/dashboard/my-jobs/[id]/edit`
@@ -81,7 +81,7 @@ Enable employers to build and manage real profiles, create job postings that app
 - [ ] View mode:
   - [x] Display all job details
   - [ ] Show number of views (query count from interactions)
-  - [ ] Show list of interested workers (pings)
+  - [x] Show list of interested workers (pings)
   - [ ] Show conversations related to this job
 - [ ] Edit mode:
   - [ ] All fields from B1 editable except job type
@@ -139,13 +139,13 @@ Enable employers to build and manage real profiles, create job postings that app
   - [x] `getOrCreateConversation()` called automatically
   - [x] Toast: "You've expressed interest!"
   - [x] Redirect to `/worker/messages/{conversationId}` after 1-2 second delay
-- [ ] Prevent duplicate pings (check if already pinged this job)
 - [x] Loading spinner during ping submission
+- [x] Prevent duplicate pings (check if already pinged this job)
 
 ### D2 — Employer Receives Ping (Dashboard Alert)
 - [x] Add "Pings" section to `/dashboard` home showing recent pings
 - [x] Display: Worker name, avatar, job title, "View Worker" link
-- [ ] Click "View Worker" → navigate to worker's profile or messaging thread
+  - [ ] Click "View Worker" → navigate to worker's profile or messaging thread
 - [ ] Real-time updates: new pings appear immediately via `onSnapshot()`
 - [ ] Optional: Bell icon with unread count
 
@@ -311,7 +311,7 @@ Enable employers to build and manage real profiles, create job postings that app
 - [ ] Geospatial filtering works correctly (10-200km range)
 - [ ] Multiple jobs from same employer display correctly
 - [ ] Employer closes job → immediately disappears from worker board
-- [ ] Duplicate pings prevented (worker can't ping same job twice)
+- [x] Duplicate pings prevented (worker can't ping same job twice)
 - [ ] Conversations persist after job closes
 - [ ] No data loss on page refresh
 - [ ] Real-time updates don't cause duplicates or flickering

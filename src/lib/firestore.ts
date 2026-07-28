@@ -213,6 +213,78 @@ export async function updatePingStatus(id: string, status: 'accepted' | 'decline
   await updateDoc(doc(db, 'pings', id), { status });
 }
 
+/** Returns the existing ping if this worker already pinged this job, else null. */
+export async function getWorkerPingForJob(workerId: string, jobPostId: string): Promise<Ping | null> {
+  const snap = await getDocs(
+    query(
+      collection(db, 'pings'),
+      where('workerId', '==', workerId),
+      where('jobPostId', '==', jobPostId),
+      limit(1),
+    ),
+  );
+  if (snap.empty) return null;
+  return { id: snap.docs[0].id, ...snap.docs[0].data() } as Ping;
+}
+
+/** Returns all pings for a specific job post. */
+export async function getJobPings(jobPostId: string): Promise<Ping[]> {
+  const snap = await getDocs(
+    query(
+      collection(db, 'pings'),
+      where('jobPostId', '==', jobPostId),
+    ),
+  );
+  const pings = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Ping));
+  return pings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+/** Convenience: count of pings for a job post */
+export async function getJobPingCount(jobPostId: string): Promise<number> {
+  const snap = await getDocs(
+    query(
+      collection(db, 'pings'),
+      where('jobPostId', '==', jobPostId),
+    ),
+  );
+  return snap.size;
+}
+
+/** Log a view for a job post. Minimal doc: jobId, workerId (optional), viewedAt */
+export async function logJobView(jobId: string, workerId?: string): Promise<void> {
+  try {
+    await addDoc(collection(db, 'jobViews'), {
+      jobId,
+      workerId: workerId || null,
+      viewedAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error('logJobView error', e);
+  }
+}
+
+/** Returns number of views recorded for a job post */
+export async function getJobViewCount(jobId: string): Promise<number> {
+  const snap = await getDocs(
+    query(
+      collection(db, 'jobViews'),
+      where('jobId', '==', jobId),
+    ),
+  );
+  return snap.size;
+}
+
+/** Returns number of conversations tied to a job post */
+export async function getJobConversationCount(jobId: string): Promise<number> {
+  const snap = await getDocs(
+    query(
+      collection(db, 'conversations'),
+      where('jobPostId', '==', jobId),
+    ),
+  );
+  return snap.size;
+}
+
 // ─── Conversations ────────────────────────────────────────────────────────────
 
 /** Employer starts a conversation. Checks thread limits and resets monthly counter if needed. */
