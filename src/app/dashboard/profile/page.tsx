@@ -35,25 +35,30 @@ export default function ProfilePage() {
                     return;
                 }
                 const employerProfile = await getEmployerProfile(userDoc.uid);
+                const normalize = (p: Partial<EmployerProfile> | null): EmployerProfile | null => {
+                    if (!p) return null;
+                    return {
+                        uid: p.uid || userDoc.uid,
+                        displayName: p.displayName || userDoc.displayName || '',
+                        companyName: p.companyName || '',
+                        industry: p.industry || '',
+                        description: p.description || '',
+                        location: p.location || { lat: 0, lng: 0, address: '' },
+                        website: p.website || undefined,
+                        avatarUrl: p.avatarUrl || undefined,
+                        averageRating: typeof p.averageRating === 'number' ? p.averageRating : 0,
+                        reviewCount: typeof p.reviewCount === 'number' ? p.reviewCount : 0,
+                        badgeCounts: p.badgeCounts || { punctual: 0, reliable: 0, quality: 0, professional: 0, goes_above: 0 },
+                        updatedAt: p.updatedAt || new Date().toISOString(),
+                    } as EmployerProfile;
+                };
+
                 if (!employerProfile) {
                     // No profile yet — switch to create mode and prefill a minimal profile object
                     setIsEditMode(false);
-                    setProfile({
-                        uid: userDoc.uid,
-                        displayName: userDoc.displayName || '',
-                        companyName: '',
-                        industry: '',
-                        description: '',
-                        location: { lat: 0, lng: 0, address: '' },
-                        website: undefined,
-                        avatarUrl: undefined,
-                        averageRating: 0,
-                        reviewCount: 0,
-                        badgeCounts: { punctual: 0, reliable: 0, quality: 0, professional: 0, goes_above: 0 },
-                        updatedAt: new Date().toISOString(),
-                    } as EmployerProfile);
+                    setProfile(normalize({ uid: userDoc.uid, displayName: userDoc.displayName }));
                 } else {
-                    setProfile(employerProfile);
+                    setProfile(normalize(employerProfile));
                     setIsEditMode(true);
                 }
             } finally {
