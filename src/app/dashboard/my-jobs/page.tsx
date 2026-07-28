@@ -12,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/lib/auth-context';
 import { getEmployerJobPosts, getJobPings, getJobConversationCount, updateJobPostStatus } from '@/lib/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
 import { timeAgo } from '@/lib/utils';
 import type { JobPost, JobStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -72,7 +71,6 @@ export default function MyJobsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
   const [savingConfirm, setSavingConfirm] = useState(false);
-  const { toast } = useToast();
 
   const visibleJobs = useMemo(() => {
     const query = search.trim().toLowerCase();
