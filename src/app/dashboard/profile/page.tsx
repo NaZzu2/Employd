@@ -23,6 +23,7 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [profile, setProfile] = useState<EmployerProfile | null>(null);
+    const [isEditMode, setIsEditMode] = useState(true);
 
     useEffect(() => {
         if (!userDoc?.uid) return;
@@ -35,10 +36,26 @@ export default function ProfilePage() {
                 }
                 const employerProfile = await getEmployerProfile(userDoc.uid);
                 if (!employerProfile) {
-                    router.replace('/dashboard/setup');
-                    return;
+                    // No profile yet — switch to create mode and prefill a minimal profile object
+                    setIsEditMode(false);
+                    setProfile({
+                        uid: userDoc.uid,
+                        displayName: userDoc.displayName || '',
+                        companyName: '',
+                        industry: '',
+                        description: '',
+                        location: { lat: 0, lng: 0, address: '' },
+                        website: undefined,
+                        avatarUrl: undefined,
+                        averageRating: 0,
+                        reviewCount: 0,
+                        badgeCounts: { punctual: 0, reliable: 0, quality: 0, professional: 0, goes_above: 0 },
+                        updatedAt: new Date().toISOString(),
+                    } as EmployerProfile);
+                } else {
+                    setProfile(employerProfile);
+                    setIsEditMode(true);
                 }
-                setProfile(employerProfile);
             } finally {
                 setLoading(false);
             }
@@ -55,10 +72,17 @@ export default function ProfilePage() {
                 toast({ title: 'Mock mode', description: 'Profile updates are disabled without Firebase.' });
                 return;
             }
-            await updateEmployerProfile(userDoc.uid, profile);
-            toast({ title: 'Profile updated successfully!' });
+            if (isEditMode) {
+                await updateEmployerProfile(userDoc.uid, profile);
+                toast({ title: 'Profile updated successfully!' });
+            } else {
+                // Create new profile
+                await createEmployerProfile(userDoc.uid, profile);
+                toast({ title: 'Profile created successfully!' });
+                setIsEditMode(true);
+            }
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Failed to update profile', description: error?.message ?? 'Try again.' });
+            toast({ variant: 'destructive', title: isEditMode ? 'Failed to update profile' : 'Failed to create profile', description: error?.message ?? 'Try again.' });
         } finally {
             setSaving(false);
         }
@@ -143,7 +167,7 @@ export default function ProfilePage() {
 
                     <Button onClick={handleSave} disabled={saving}>
                         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Save Changes
+                        {isEditMode ? 'Save Changes' : 'Create Profile'}
                     </Button>
                 </CardContent>
             </Card>

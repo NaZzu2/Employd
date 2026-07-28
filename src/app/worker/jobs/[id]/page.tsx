@@ -11,7 +11,7 @@ import { getJobPost } from '@/lib/firestore';
 import { FINNISH_JOB_POSTS } from '@/lib/data';
 import { hasValidConfig } from '@/lib/firebase';
 import { PingDialog } from '@/components/worker/ping-dialog';
-import { getUserDoc, getOrCreateConversation } from '@/lib/firestore';
+import { getUserDoc, getOrCreateConversation, logJobView } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { JobPost } from '@/lib/types';
 
@@ -41,6 +41,24 @@ export default function JobDetailPage() {
       active = false;
     };
   }, [jobId]);
+
+  // Log a single view per session per job (debounced via sessionStorage)
+  useEffect(() => {
+    if (!job || !job.id) return;
+    if (!hasValidConfig) return;
+    if (typeof window === 'undefined') return;
+    try {
+      const key = `jobViewLogged:${job.id}`;
+      if (!sessionStorage.getItem(key)) {
+        // Fire-and-forget
+        logJobView(job.id, userDoc?.uid).catch((e) => console.error('logJobView error', e));
+        sessionStorage.setItem(key, new Date().toISOString());
+      }
+    } catch (e) {
+      // ignore sessionStorage failures
+      console.error('session storage error for job view logging', e);
+    }
+  }, [job?.id, userDoc?.uid]);
 
   const messageEmployer = async () => {
     if (!userDoc || !job) return;
