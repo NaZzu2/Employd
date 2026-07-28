@@ -33,12 +33,18 @@ export default function EditJobPage() {
     if (!job) return;
     setSaving(true);
     try {
+      // Basic validation
+      if (!job.title?.trim()) throw new Error('Title is required');
+      if (!job.description?.trim()) throw new Error('Description is required');
+      if (!job.location?.address?.trim()) throw new Error('Location address is required');
+
       await updateJobPost(job.id, {
         title: job.title,
         description: job.description,
         salary: job.salary,
         requirements: job.requirements,
         location: job.location,
+        // keep type locked (do not allow changing job type here)
         type: job.type,
         status: job.status,
         employerId: job.employerId,
@@ -81,10 +87,19 @@ export default function EditJobPage() {
             <Label>Salary</Label>
             <Input value={job.salary} onChange={(e) => setJob({ ...job, salary: e.target.value })} />
           </div>
+          <div className="space-y-2">
+            <Label>Job Type</Label>
+            <Input value={job.type} disabled />
+          </div>
+          <div className="space-y-2">
+            <Label>Location Address</Label>
+            <Input value={job.location?.address ?? ''} onChange={(e) => setJob({ ...job, location: { ...job.location, address: e.target.value } })} />
+          </div>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Save
           </Button>
+          <Button variant="outline" onClick={() => router.push(`/dashboard/my-jobs/${job.id}`)}>Cancel</Button>
         </CardContent>
       </Card>
     </div>

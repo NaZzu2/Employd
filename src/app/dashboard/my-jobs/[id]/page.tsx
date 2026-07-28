@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Clock, Loader2, MapPin, MessageSquare, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getJobPost, getJobPings } from '@/lib/firestore';
+import { getJobPost, getJobPings, updateJobPostStatus } from '@/lib/firestore';
+import { useToast } from '@/hooks/use-toast';
 import type { JobPost, Ping } from '@/lib/types';
 import { timeAgo } from '@/lib/utils';
 
@@ -18,6 +20,9 @@ export default function JobDetailPage() {
   const [job, setJob] = useState<JobPost | null>(null);
   const [pings, setPings] = useState<Ping[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
 
   const id = typeof params.id === 'string' ? params.id : '';
 
@@ -68,9 +73,42 @@ export default function JobDetailPage() {
           <div className="flex gap-2">
             <Button asChild><Link href={`/dashboard/my-jobs/${job.id}/edit`}>Edit</Link></Button>
             <Button asChild variant="outline"><Link href="/dashboard/my-jobs">Back to jobs</Link></Button>
+            <Button variant="destructive" onClick={() => setConfirmOpen(true)}>Close listing</Button>
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Close this job posting?</DialogTitle>
+            <DialogDescription>
+              Closing the job will hide it from workers. Existing conversations remain active. You can reopen later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4">
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={saving}>Cancel</Button>
+              <Button variant="destructive" onClick={async () => {
+                if (!job) return;
+                setSaving(true);
+                try {
+                  await updateJobPostStatus(job.id, 'closed');
+                  toast({ title: 'Job closed', description: 'The job has been closed.' });
+                  router.push('/dashboard/my-jobs');
+                } catch (e: any) {
+                  toast({ variant: 'destructive', title: 'Failed', description: e?.message ?? 'Unable to close job.' });
+                } finally {
+                  setSaving(false);
+                  setConfirmOpen(false);
+                }
+              }}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Confirm Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>

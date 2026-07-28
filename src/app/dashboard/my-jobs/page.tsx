@@ -10,7 +10,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth-context';
-import { getEmployerJobPosts, getJobPings, updateJobPostStatus } from '@/lib/firestore';
+import { getEmployerJobPosts, getJobPings, getJobConversationCount, updateJobPostStatus } from '@/lib/firestore';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 import { timeAgo } from '@/lib/utils';
 import type { JobPost, JobStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +24,7 @@ export default function MyJobsPage() {
   const { toast } = useToast();
   const [jobs, setJobs] = useState<JobPost[]>([]);
   const [pingCounts, setPingCounts] = useState<Record<string, number>>({});
+  const [convCounts, setConvCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'all' | JobStatus>('all');
   const [sortMode, setSortMode] = useState<SortMode>('recent');
@@ -39,10 +42,12 @@ export default function MyJobsPage() {
         const employerJobs = await getEmployerJobPosts(userDoc.uid);
         setJobs(employerJobs);
 
-        const counts = await Promise.all(
-          employerJobs.map(async (job) => [job.id, (await getJobPings(job.id)).length] as const),
-        );
-        setPingCounts(Object.fromEntries(counts));
+        const pingPromises = employerJobs.map(async (job) => [job.id, (await getJobPings(job.id)).length] as const);
+        const convPromises = employerJobs.map(async (job) => [job.id, (await getJobConversationCount(job.id))] as const);
+        const pingResults = await Promise.all(pingPromises);
+        const convResults = await Promise.all(convPromises);
+        setPingCounts(Object.fromEntries(pingResults));
+        setConvCounts(Object.fromEntries(convResults));
       } catch (error) {
         console.error(error);
       } finally {
@@ -63,6 +68,11 @@ export default function MyJobsPage() {
       toast({ variant: 'destructive', title: 'Error', description: error?.message ?? 'Unable to update listing.' });
     }
   };
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
+  const [savingConfirm, setSavingConfirm] = useState(false);
+  const { toast } = useToast();
 
   const visibleJobs = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -158,7 +168,8 @@ export default function MyJobsPage() {
                         {job.status === 'active' ? 'Live' : 'Closed'}
                       </Badge>
                       <Badge variant="outline" className="text-xs">{job.type}</Badge>
-                      <Badge variant="outline" className="text-xs">{pingCounts[job.id] ?? 0} pings</Badge>
+                        <Badge variant="outline" className="text-xs">{pingCounts[job.id] ?? 0} pings</Badge>
+                        <Badge variant="outline" className="text-xs">{convCounts[job.id] ?? 0} conversations</Badge>
                     </div>
                     <CardTitle className="text-base">{job.title}</CardTitle>
                     <CardDescription>{job.companyName}</CardDescription>
@@ -177,7 +188,15 @@ export default function MyJobsPage() {
                       <DropdownMenuItem asChild>
                         <Link href={`/dashboard/my-jobs/${job.id}/edit`}>Edit</Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleToggleStatus(job)}>
+                      <DropdownMenuItem onClick={() => {
+                          if (job.status === 'active') {
+                            setSelectedJob(job);
+                            setConfirmOpen(true);
+                          } else {
+                            handleToggleStatus(job);
+                          }
+                        }}
+                      >
                         {job.status === 'active' ? (
                           <><EyeOff className="mr-2 h-4 w-4" /> Close listing</>
                         ) : (
@@ -203,6 +222,37 @@ export default function MyJobsPage() {
           ))}
         </div>
       )}
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Close this job posting?</DialogTitle>
+            <DialogDescription>
+              Closing the job will hide it from workers but keep existing conversations intact. You can reopen it later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={savingConfirm}>Cancel</Button>
+            <Button variant="destructive" onClick={async () => {
+              if (!selectedJob) return;
+              setSavingConfirm(true);
+              try {
+                await updateJobPostStatus(selectedJob.id, 'closed');
+                setJobs((prev) => prev.map((j) => (j.id === selectedJob.id ? { ...j, status: 'closed' } : j)));
+                toast({ title: 'Job closed', description: 'The job has been closed.' });
+              } catch (e: any) {
+                toast({ variant: 'destructive', title: 'Failed', description: e?.message ?? 'Unable to close job.' });
+              } finally {
+                setSavingConfirm(false);
+                setConfirmOpen(false);
+                setSelectedJob(null);
+              }
+            }}>
+              {savingConfirm ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Confirm Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
