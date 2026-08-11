@@ -30,13 +30,14 @@ export default function PingsPage() {
   const [pings, setPings] = useState<Ping[]>([]);
   const [replyTarget, setReplyTarget] = useState<Ping | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
     if (!userDoc?.uid) { setLoading(false); return; }
     getEmployerPings(userDoc.uid)
-      .then(setPings)
-      .catch(console.error)
+      .then((res) => { setPings(res); setLoadError(null); })
+      .catch((err) => { console.error('getEmployerPings error', err); setLoadError(String(err?.message || err)); })
       .finally(() => setLoading(false));
   }, [userDoc?.uid, authLoading]);
 
@@ -70,6 +71,18 @@ export default function PingsPage() {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4">
+        <p className="text-destructive">Failed to load pings: {loadError}</p>
+        <div className="flex gap-2">
+          <Button onClick={() => { setLoading(true); setLoadError(null); if (userDoc?.uid) getEmployerPings(userDoc.uid).then(setPings).catch((e) => setLoadError(String(e?.message || e))).finally(() => setLoading(false)); }}>Retry</Button>
+          <Button variant="outline" onClick={() => router.push('/dashboard')}>Back</Button>
+        </div>
       </div>
     );
   }

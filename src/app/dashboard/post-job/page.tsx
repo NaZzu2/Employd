@@ -28,18 +28,26 @@ export default function PostJobPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [profileChecked, setProfileChecked] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   // Guard: redirect to setup if employer profile is missing
   useEffect(() => {
     if (!userDoc?.uid) return;
-    getEmployerProfile(userDoc.uid).then((profile) => {
-      if (!profile) {
-        toast({ variant: 'destructive', title: 'Complete your profile first', description: 'Please set up your employer profile before posting a job.' });
-        router.replace('/dashboard/setup');
-      } else {
-        setProfileChecked(true);
+    const load = async () => {
+      try {
+        const profile = await getEmployerProfile(userDoc.uid);
+        if (!profile) {
+          toast({ variant: 'destructive', title: 'Complete your profile first', description: 'Please set up your employer profile before posting a job.' });
+          router.replace('/dashboard/setup');
+        } else {
+          setProfileChecked(true);
+        }
+      } catch (err: any) {
+        console.error('Failed to check employer profile', err);
+        setProfileError(String(err?.message || err));
       }
-    }).catch(() => setProfileChecked(true));
+    };
+    load();
   }, [userDoc?.uid, router, toast]);
 
   const [formData, setFormData] = useState({
@@ -146,8 +154,23 @@ export default function PostJobPage() {
   return (
     <div className="max-w-3xl mx-auto py-8">
       {!profileChecked ? (
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4">
+          <div className="w-full max-w-lg p-4">
+            <div className="h-6 w-48 bg-muted animate-pulse rounded" />
+            <div className="mt-3 h-4 w-72 bg-muted animate-pulse rounded" />
+            <div className="mt-2 h-3 w-40 bg-muted animate-pulse rounded" />
+          </div>
+          {profileError ? (
+            <div className="space-y-2 text-center">
+              <p className="text-sm text-destructive">Failed to verify profile: {profileError}</p>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={() => { setProfileError(null); setProfileChecked(false); window.location.reload(); }}>Retry</Button>
+                <Button variant="outline" onClick={() => router.replace('/dashboard/setup')}>Open setup</Button>
+              </div>
+            </div>
+          ) : (
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          )}
         </div>
       ) : (
         <>

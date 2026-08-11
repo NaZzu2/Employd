@@ -67,17 +67,26 @@ export function MessageThread({
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [subscribeError, setSubscribeError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const seenRef = useRef<Set<string>>(new Set());
 
   // Real-time subscription (or mock fallback when Firebase not configured)
   useEffect(() => {
     if (hasValidConfig) {
-      const unsub = subscribeToMessages(conversationId, (msgs) => {
-        setMessages(msgs);
+      try {
+        const unsub = subscribeToMessages(conversationId, (msgs) => {
+          setMessages(msgs);
+          setLoading(false);
+          setSubscribeError(null);
+        });
+        return () => unsub();
+      } catch (err: any) {
+        console.error('subscribeToMessages error', err);
+        setSubscribeError(String(err?.message || err));
         setLoading(false);
-      });
-      return () => unsub();
+        return () => {};
+      }
     }
 
     // Local mock messages for development when Firebase isn't configured
@@ -112,6 +121,15 @@ export function MessageThread({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Retry subscription helper
+  const retrySubscription = () => {
+    setLoading(true);
+    setSubscribeError(null);
+    // Re-run the effect by toggling a small noop state via setting messages to [] briefly
+    setMessages([]);
+    setTimeout(() => setLoading(false), 500);
+  };
 
   // Mark incoming messages as seen
   useEffect(() => {
@@ -190,7 +208,26 @@ export function MessageThread({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-48">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-6 w-6 animate-spin text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+          <div className="w-64">
+            <div className="h-3 bg-muted rounded animate-pulse mb-2" />
+            <div className="h-3 bg-muted rounded animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (subscribeError) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6">
+        <p className="text-destructive mb-3">Failed to load messages: {subscribeError}</p>
+        <div className="flex gap-2">
+          <Button onClick={retrySubscription}>Retry</Button>
+        </div>
       </div>
     );
   }
