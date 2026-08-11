@@ -119,16 +119,6 @@ export function DashboardSidebar() {
           })()}
         </SidebarMenu>
       </SidebarContent>
-                  <SidebarMenuButton isActive={isActive} tooltip={{ children: item.label }}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarContent>
 
       <SidebarFooter>
         {/* Thread usage indicator */}
