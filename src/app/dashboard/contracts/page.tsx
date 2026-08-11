@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
-import { getUserContracts, markContractComplete } from '@/lib/firestore';
+import { markContractComplete, subscribeToUserContracts } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Contract } from '@/lib/types';
 
@@ -17,20 +17,14 @@ export default function EmployerContractsPage() {
   const [tab, setTab] = useState<'pending' | 'accepted' | 'rejected'>('pending');
 
   useEffect(() => {
-    let active = true;
-    const load = async () => {
-      if (!userDoc?.uid) { setLoading(false); return; }
-      try {
-        const res = await getUserContracts(userDoc.uid, 'employer');
-        if (active) setContracts(res);
-      } catch (err: any) {
-        console.error('Failed to load contracts', err);
-        toast({ variant: 'destructive', title: 'Failed to load contracts', description: err?.message });
-      } finally { if (active) setLoading(false); }
-    };
-    load();
-    return () => { active = false; };
-  }, [userDoc?.uid, toast]);
+    if (!userDoc?.uid) { setLoading(false); return; }
+    setLoading(true);
+    const unsub = subscribeToUserContracts(userDoc.uid, 'employer', (cs) => {
+      setContracts(cs);
+      setLoading(false);
+    });
+    return () => unsub();
+  }, [userDoc?.uid]);
 
   const pending = contracts.filter((c) => c.status === 'pending_worker_acceptance');
   const accepted = contracts.filter((c) => c.status === 'active');

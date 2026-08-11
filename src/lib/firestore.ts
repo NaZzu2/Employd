@@ -622,6 +622,25 @@ export async function getPendingContractsForWorker(workerId: string): Promise<Co
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Contract));
 }
 
+/** Real-time subscription for contracts for a user (excludes completed) */
+export function subscribeToUserContracts(
+  uid: string,
+  role: 'employer' | 'worker',
+  onChange: (contracts: Contract[]) => void,
+): Unsubscribe {
+  const field = role === 'employer' ? 'employerId' : 'workerId';
+  // Subscribe to contracts that are not yet completed (pending, active, declined)
+  const q = query(
+    collection(db, 'contracts'),
+    where(field, '==', uid),
+    where('status', 'in', ['pending_worker_acceptance', 'active', 'declined']),
+  );
+  return onSnapshot(q, (snap) => {
+    const cs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Contract));
+    onChange(cs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+  });
+}
+
 // ─── Reviews ──────────────────────────────────────────────────────────────────
 
 export async function hasReviewedContract(
