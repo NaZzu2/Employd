@@ -14,7 +14,7 @@ export default function EmployerContractsPage() {
 
   const [loading, setLoading] = useState(true);
   const [contracts, setContracts] = useState<Contract[]>([]);
-  const [tab, setTab] = useState<'pending' | 'accepted' | 'rejected'>('pending');
+  const [tab, setTab] = useState<'pending' | 'accepted' | 'rejected' | 'completed'>('pending');
 
   useEffect(() => {
     if (!userDoc?.uid) { setLoading(false); return; }
@@ -29,6 +29,7 @@ export default function EmployerContractsPage() {
   const pending = contracts.filter((c) => c.status === 'pending_worker_acceptance');
   const accepted = contracts.filter((c) => c.status === 'active');
   const rejected = contracts.filter((c) => c.status === 'declined');
+  const completedList = contracts.filter((c) => c.status === 'completed');
 
   const handleMarkComplete = async (id: string) => {
     try {
@@ -49,6 +50,7 @@ export default function EmployerContractsPage() {
       <div className="flex gap-2">
         <Button variant={tab === 'pending' ? 'default' : 'outline'} onClick={() => setTab('pending')}>Pending</Button>
         <Button variant={tab === 'accepted' ? 'default' : 'outline'} onClick={() => setTab('accepted')}>Accepted</Button>
+        <Button variant={tab === 'completed' ? 'default' : 'outline'} onClick={() => setTab('completed')}>Completed</Button>
         <Button variant={tab === 'rejected' ? 'default' : 'outline'} onClick={() => setTab('rejected')}>Rejected</Button>
       </div>
 
@@ -83,6 +85,22 @@ export default function EmployerContractsPage() {
                 <div className="flex gap-2 mt-4">
                   <Button onClick={() => handleMarkComplete(c.id)}>Mark Complete</Button>
                 </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : tab === 'completed' ? (
+        <div className="space-y-3">
+          {completedList.length === 0 && <div className="text-sm text-muted-foreground">No completed contracts.</div>}
+          {completedList.map((c) => (
+            <Card key={c.id}>
+              <CardHeader>
+                <CardTitle className="text-sm">{c.jobTitle ?? 'Contract'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Worker: {c.workerName ?? c.workerId}</div>
+                <div className="mt-2 text-sm">{(c as any).terms ?? (c as any).description ?? ''}</div>
+                <div className="mt-3 text-xs text-muted-foreground">Completed at: {(c as any).completedAt ?? ''}</div>
               </CardContent>
             </Card>
           ))}
