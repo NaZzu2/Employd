@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Loader2, MapPin } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { createEmployerProfile, getEmployerProfile, updateEmployerProfile } from '@/lib/firestore';
@@ -162,13 +163,16 @@ export default function ProfilePage() {
                         <Input value={profile.website ?? ''} onChange={(e) => setProfile({ ...profile, website: e.target.value })} />
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary">Plan: {userDoc?.subscriptionTier ?? 'free'}</Badge>
-                        <Badge variant="outline">
-                          {userDoc?.monthlyThreadsStarted ?? 0} / {THREAD_LIMITS[userDoc?.subscriptionTier ?? 'free'] === Infinity ? '∞' : THREAD_LIMITS[userDoc?.subscriptionTier ?? 'free']} conversations used this month
-                        </Badge>
-                        <Badge variant="outline">Ratings: {profile.averageRating.toFixed(1)} / {profile.reviewCount}</Badge>
-                    </div>
+                                        <div className="flex flex-wrap gap-2 items-center">
+                                                <Badge variant="secondary">Plan: {userDoc?.subscriptionTier ?? 'free'}</Badge>
+                                                <Badge variant="outline">
+                                                    {userDoc?.monthlyThreadsStarted ?? 0} / {THREAD_LIMITS[userDoc?.subscriptionTier ?? 'free'] === Infinity ? '∞' : THREAD_LIMITS[userDoc?.subscriptionTier ?? 'free']} conversations used this month
+                                                </Badge>
+                                                <Badge variant="outline">Ratings: {profile.averageRating.toFixed(1)} / {profile.reviewCount}</Badge>
+                                                <Link href="/dashboard/subscriptions">
+                                                    <Button variant="ghost" size="sm" className="ml-2">Upgrade subscription</Button>
+                                                </Link>
+                                        </div>
 
                     <Button onClick={handleSave} disabled={saving}>
                         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

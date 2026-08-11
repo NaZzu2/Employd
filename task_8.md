@@ -46,6 +46,10 @@ Add an "Upgrade subscription" action on the Employer Profile page (above monthly
   - Add an integration smoke test for the subscription chooser page (clicking a plan uses mock flow and updates `userDoc`).
 
 - [ ] Documentation & admin
+
+---
+
+Status: Implementation applied (mock flow + API routes). Unit tests still TODO.
   - Document plans in `docs/` and add `README` section on how to configure Stripe keys, test cards, and webhook URL.
   - Add environment variables used for Stripe/Mock flows to README: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `BILLING_MODE` (mock|stripe).
 

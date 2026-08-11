@@ -19,6 +19,16 @@ export const BADGE_LIMITS: Record<SubscriptionTier, number> = {
   enterprise: Infinity,
 };
 
+// ─── Billing / Plans ───────────────────────────────────────────────────────
+
+export type Plan = {
+  id: string;
+  name: string;
+  price: number; // number in major units (e.g., 29 = €29)
+  currency: string; // e.g., 'EUR'
+  monthlyThreads: number | null; // null = unlimited
+  features?: string[];
+};
 // ─── Geolocation ─────────────────────────────────────────────────────────────
 
 export type GeoLocation = {
