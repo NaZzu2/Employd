@@ -36,6 +36,7 @@ const navItems = [
   { href: '/dashboard/workers', icon: Users, label: 'Find Workers' },
   { href: '/dashboard/setup', icon: User, label: 'Setup Profile' },
   { href: '/dashboard/post-job', icon: Briefcase, label: 'Post Job' },
+  { href: '/dashboard/contracts', icon: Briefcase, label: 'Contracts' },
   { href: '/dashboard/my-jobs', icon: Briefcase, label: 'My Jobs' },
   { href: '/dashboard/pings', icon: Bell, label: 'Pings' },
   { href: '/dashboard/messages', icon: MessageSquare, label: 'Messages' },
