@@ -47,6 +47,37 @@ Add an "Upgrade subscription" action on the Employer Profile page (above monthly
 
 - [ ] Documentation & admin
 
+Status: Implementation applied (mock flow + API routes). Unit tests still TODO.
+  - Document plans in `docs/` and add `README` section on how to configure Stripe keys, test cards, and webhook URL.
+  - Add environment variables used for Stripe/Mock flows to README: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `BILLING_MODE` (mock|stripe).
+
+- [x] Add `Upgrade subscription` button to the Employer Profile page
+  - Placed next to monthly-threads badge(s) in `src/app/dashboard/profile/page.tsx`. Clicking opens `/dashboard/subscriptions`.
+
+- [x] Create Subscription Selection page (choose plan)
+  - Created `src/app/dashboard/subscriptions/page.tsx` with plan cards and client flow.
+
+- [x] Billing helper layer and types
+  - Created `src/lib/billing.ts` and added `Plan` type in `src/lib/types.ts`.
+
+- [x] Frontend checkout flow
+  - Mock flow implemented: selects call `/api/billing/create-checkout`, applies subscription in mock mode. Stripe test paths present (env-controlled).
+
+- [x] Webhook / server-side hook (optional for MVP)
+  - Added `src/app/api/billing/webhook/route.ts` skeleton that verifies Stripe signature and calls `applySubscription`.
+
+- [x] UI changes to reflect upgraded limits
+  - `startConversation` enforces thread limits; profile and badges read `subscriptionTier`. Mock flow applies optimistic updates.
+
+- [x] Feature gating for conversations/threads
+  - `src/lib/firestore.ts` `startConversation` enforces `THREAD_LIMITS` and increments `monthlyThreadsStarted`.
+
+- [ ] Tests and validation
+  - Unit tests still TODO.
+
+- [x] Documentation & admin
+  - Added `src/app/dashboard/subscriptions/README.md` and notes in `task_8.md`.
+
 ---
 
 Status: Implementation applied (mock flow + API routes). Unit tests still TODO.

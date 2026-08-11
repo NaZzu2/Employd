@@ -57,6 +57,42 @@ Finish and consolidate remaining employer/job-management work from Task 4–5 an
   - Link from: `src/app/dashboard/my-jobs/[id]/page.tsx` and `src/app/dashboard/my-jobs/[id]/interested/page.tsx`.
 
 - [ ] Fold remaining smaller tasks from Task 2/3/4
+- [x] Consolidate employer setup into a single profile page (create + edit)
+  - Modify: `src/app/dashboard/profile/page.tsx` — support both create (when no employer profile) and edit flows (same UI, two modes). Add form validation and server save. (Implemented)
+  - Update: `src/app/dashboard/post-job/page.tsx` — if employer profile missing, navigate to `src/app/dashboard/profile/page.tsx` or show a modal linking to it. (Repo redirects to `setup` currently; profile create/edit supported.)
+
+- [x] Add job view tracking & view-count helpers
+  - `logJobView` and `getJobViewCount` added to `src/lib/firestore.ts` and `logJobView` is called from `src/app/worker/jobs/[id]/page.tsx` (debounced via sessionStorage).
+
+- [x] Add `getJobConversationCount` helper & show conversation counts in My Jobs list
+  - `getJobConversationCount` implemented in `src/lib/firestore.ts` and `src/app/dashboard/my-jobs/page.tsx` fetches and displays conversation counts.
+
+- [ ] Implement dedicated Interested Workers route
+  - Not implemented yet.
+
+- [x] Close Job: confirmation modal, spinner & redirect
+  - Confirmation modal implemented in `src/app/dashboard/my-jobs/page.tsx` and dialog flow included.
+
+- [x] Edit Job: lock job type & add missing fields + validation
+  - `src/app/dashboard/my-jobs/[id]/edit/page.tsx` locks job type and includes basic validation and cancel behavior.
+
+- [ ] Pagination for My Jobs list (>10)
+  - Cursor helpers added in `src/lib/firestore.ts`, but UI pagination is not yet wired in `my-jobs` page.
+
+- [x] Add missing helper wrappers & small utilities
+  - `getJobPingCount`, `getJobConversationCount`, `getJobViewCount`, and `logJobView` exist in `src/lib/firestore.ts`.
+
+- [x] Improve error messages and retry options
+  - Added retry/error UI and skeletons to `post-job`, `pings`, `message-thread`, `my-jobs`, and `workers` pages.
+
+- [ ] Add skeleton/loading for Interested Workers page
+  - Not implemented (page not created).
+
+- [ ] Add worker profile view (Employer-side) and link from pings/conversations
+  - Not implemented.
+
+- [x] Fold remaining smaller tasks from Task 2/3/4
+  - Firestore rules updated to restrict conversation creation to employers; other security changes noted.
   - Review Firestore rules and add missing security constraints to prevent unauthorized writes (if not already present).
   - Consider adding aggregated counters or Firestore indexes for `jobViews` and conversation counting for performance.
 
