@@ -16,7 +16,6 @@ import { isWithinRange } from '@/lib/utils';
 import { EmployeeJobCard } from '@/components/employee/employee-job-card';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { getUserDoc, findExistingConversation } from '@/lib/firestore';
 import type { JobPost } from '@/lib/types';
 
 export default function WorkerJobsPage() {
@@ -28,7 +27,7 @@ export default function WorkerJobsPage() {
   const [search, setSearch] = useState('');
   const [radius, setRadius] = useState(userDoc?.searchRadiusKm ?? 50);
   const [filterByRange, setFilterByRange] = useState(false);
-  const [creatingConvId, setCreatingConvId] = useState<string | null>(null);
+  
 
   useEffect(() => {
     let active = true;
@@ -84,36 +83,6 @@ export default function WorkerJobsPage() {
     });
   }, [jobs, search, userDoc, filterByRange, radius]);
 
-  const messageEmployer = async (job: JobPost) => {
-    if (!userDoc) return;
-    setCreatingConvId(job.id);
-    try {
-      if (!hasValidConfig) {
-        const convId = `mock-${job.id}`;
-        toast({ title: 'Conversation started', description: `Conversation started with ${job.companyName}.` });
-        router.push(`/worker/messages/${convId}`);
-        return;
-      }
-      const employerDoc = await getUserDoc(job.employerId);
-      if (!employerDoc) throw new Error('Employer profile not found');
-      const existing = await findExistingConversation(employerDoc.uid, userDoc.uid);
-      if (existing) {
-        router.push(`/worker/messages/${existing}`);
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Cannot start conversation',
-          description: 'Only employers can start new conversations. Use "Interested" to notify the employer instead.',
-        });
-      }
-    } catch (error: any) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Unable to start conversation', description: error?.message ?? 'Try again later.' });
-    } finally {
-      setCreatingConvId(null);
-    }
-  };
-
   const handlePingSent = (conversationId: string) => {
     toast({ title: 'Conversation created', description: 'We created a chat with the employer.' });
     router.push(`/worker/messages/${conversationId}`);
@@ -124,7 +93,7 @@ export default function WorkerJobsPage() {
       <div className="space-y-2">
         <h1 className="text-xl font-bold">Job Board</h1>
         <p className="text-sm text-muted-foreground">
-          Browse active job listings and message employers directly.
+          Browse active job listings and express interest in jobs.
         </p>
       </div>
 
@@ -193,9 +162,7 @@ export default function WorkerJobsPage() {
             <EmployeeJobCard
               key={job.id}
               job={job}
-              onMessageEmployer={messageEmployer}
               onPingSent={handlePingSent}
-              busy={creatingConvId === job.id}
             />
           ))}
         </div>

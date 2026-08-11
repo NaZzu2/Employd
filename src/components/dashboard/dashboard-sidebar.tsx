@@ -71,7 +71,7 @@ export function DashboardSidebar() {
 
       <SidebarContent>
         <SidebarMenu>
-          {navItems.map((item) => {
+          {(userDoc?.role === 'employer' ? navItems.filter((i) => i.href !== '/dashboard/setup') : navItems).map((item) => {
             const isActive = item.exact
               ? pathname === item.href
               : pathname.startsWith(item.href);

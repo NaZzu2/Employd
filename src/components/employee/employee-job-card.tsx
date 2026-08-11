@@ -14,9 +14,7 @@ import { cn } from '@/lib/utils';
 
 interface EmployeeJobCardProps {
   job: JobPost;
-  onMessageEmployer: (job: JobPost) => void;
   onPingSent?: (conversationId: string) => void;
-  busy?: boolean;
 }
 
 const typeColors: Record<string, string> = {
@@ -25,7 +23,7 @@ const typeColors: Record<string, string> = {
   Contract: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300',
 };
 
-export function EmployeeJobCard({ job, onMessageEmployer, onPingSent, busy }: EmployeeJobCardProps) {
+export function EmployeeJobCard({ job, onPingSent }: EmployeeJobCardProps) {
   const [pingOpen, setPingOpen] = useState(false);
 
   return (
@@ -64,25 +62,7 @@ export function EmployeeJobCard({ job, onMessageEmployer, onPingSent, busy }: Em
           <p className="text-sm text-muted-foreground line-clamp-2">{job.description}</p>
 
           <div className="grid gap-2 sm:grid-cols-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full"
-              onClick={(e) => {
-                e.stopPropagation();
-                onMessageEmployer(job);
-              }}
-              disabled={busy}
-            >
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <MessageSquare className="h-4 w-4" />
-                  Message Employer
-                </>
-              )}
-            </Button>
+            {/* Removed Message Employer for employees — they should use Interested */}
             <Button
               className="w-full gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
               size="sm"
