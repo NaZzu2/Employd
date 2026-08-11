@@ -579,6 +579,19 @@ export async function workerRespondToContract(
   });
 }
 
+/** Add a one-off message under a contract (e.g., employee's rejection note) */
+export async function addContractMessage(
+  contractId: string,
+  fromUid: string,
+  text: string,
+) {
+  await addDoc(collection(db, 'contracts', contractId, 'messages'), {
+    fromUid,
+    text,
+    createdAt: new Date().toISOString(),
+  });
+}
+
 export async function markContractComplete(contractId: string) {
   await updateDoc(doc(db, 'contracts', contractId), {
     status: 'completed',

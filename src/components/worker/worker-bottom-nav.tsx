@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, MessageSquare, User } from 'lucide-react';
+import { Home, Briefcase, MessageSquare, User, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const tabs = [
   { href: '/worker', icon: Home, label: 'Home', exact: true },
   { href: '/worker/jobs', icon: Briefcase, label: 'Jobs' },
+  { href: '/worker/contracts', icon: FileText, label: 'Contracts' },
   { href: '/worker/messages', icon: MessageSquare, label: 'Messages' },
   { href: '/worker/my-profile', icon: User, label: 'Profile' },
 ];
