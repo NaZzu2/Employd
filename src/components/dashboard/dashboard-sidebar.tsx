@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   Briefcase,
   Users,
@@ -30,6 +31,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/lib/auth-context';
 import { threadsRemaining } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { getEmployerProfile } from '@/lib/firestore';
 
 const navItems = [
   { href: '/dashboard', icon: Users, label: 'Dashboard Home', exact: true },
@@ -49,6 +51,28 @@ export function DashboardSidebar() {
   const router = useRouter();
   const { userDoc, signOut } = useAuth();
 
+  // Whether the employer still needs to complete setup
+  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (!userDoc || userDoc.role !== 'employer') {
+        if (active) setNeedsSetup(null);
+        return;
+      }
+      try {
+        const p = await getEmployerProfile(userDoc.uid);
+        if (!active) return;
+        setNeedsSetup(!p || !p.companyName || !p.companyName.trim());
+      } catch (e) {
+        if (active) setNeedsSetup(true);
+      }
+    };
+    load();
+    return () => { active = false; };
+  }, [userDoc?.uid, userDoc?.role]);
+
   const remaining = userDoc
     ? threadsRemaining(userDoc.subscriptionTier, userDoc.monthlyThreadsStarted)
     : 'unlimited';
@@ -60,25 +84,41 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-1">
-          <Logo className="h-7 w-7 text-primary" />
-          <span className="text-lg font-semibold">Employ&apos;d</span>
-          <Badge variant="secondary" className="ml-auto text-xs capitalize">
-            {userDoc?.subscriptionTier ?? 'free'}
-          </Badge>
-        </div>
-      </SidebarHeader>
-
       <SidebarContent>
         <SidebarMenu>
-          {(userDoc?.role === 'employer' ? navItems.filter((i) => i.href !== '/dashboard/setup') : navItems).map((item) => {
-            const isActive = item.exact
-              ? pathname === item.href
-              : pathname.startsWith(item.href);
-            return (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href} className="w-full">
+          {(() => {
+            // Build nav items dynamically so we can conditionally show Setup/Profile
+            const base = navItems.filter((i) => i.href !== '/dashboard/setup' && i.href !== '/dashboard/profile');
+            // Decide which profile-related item to show for employers
+            if (userDoc?.role === 'employer') {
+              if (needsSetup) {
+                base.splice(2, 0, { href: '/dashboard/setup', icon: User, label: 'Setup Profile' });
+              } else {
+                base.splice(2, 0, { href: '/dashboard/profile', icon: User, label: 'Profile' });
+              }
+            } else {
+              // default for non-employers: show Profile
+              base.splice(2, 0, { href: '/dashboard/profile', icon: User, label: 'Profile' });
+            }
+
+            return base.map((item) => {
+              const isActive = item.exact
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
+              return (
+                <SidebarMenuItem key={item.href}>
+                  <Link href={item.href} className="w-full">
+                    <SidebarMenuButton isActive={isActive} tooltip={{ children: item.label }}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              );
+            });
+          })()}
+        </SidebarMenu>
+      </SidebarContent>
                   <SidebarMenuButton isActive={isActive} tooltip={{ children: item.label }}>
                     <item.icon />
                     <span>{item.label}</span>
