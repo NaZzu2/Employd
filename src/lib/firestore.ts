@@ -94,7 +94,13 @@ export async function toggleLookingForWork(uid: string, value: boolean) {
 
 // ─── Employer Profiles ───────────────────────────────────────────────────────
 export async function createEmployerProfile(uid: string, profile: EmployerProfile) {
-  await setDoc(doc(db, 'employerProfiles', uid), profile);
+  // Firestore rejects fields with `undefined` values. Remove any keys
+  // that are undefined so callers can pass optional fields safely.
+  const sanitized: Record<string, any> = {};
+  Object.entries(profile).forEach(([key, value]) => {
+    if (value !== undefined) sanitized[key] = value;
+  });
+  await setDoc(doc(db, 'employerProfiles', uid), sanitized);
 }
 
 
