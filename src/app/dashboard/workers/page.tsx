@@ -133,8 +133,26 @@ export default function WorkersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Users className="h-6 w-6" />
+              Find Workers
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">Loading workers…</p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[1,2,3,4,5,6].map((i) => (
+            <div key={i} className="p-4 border rounded-lg">
+              <div className="h-8 w-8 bg-muted rounded-full mb-3 animate-pulse" />
+              <div className="h-4 w-40 bg-muted rounded mb-2 animate-pulse" />
+              <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

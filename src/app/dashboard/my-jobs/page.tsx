@@ -25,6 +25,7 @@ export default function MyJobsPage() {
   const [pingCounts, setPingCounts] = useState<Record<string, number>>({});
   const [convCounts, setConvCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | JobStatus>('all');
   const [sortMode, setSortMode] = useState<SortMode>('recent');
   const [search, setSearch] = useState('');
@@ -47,8 +48,10 @@ export default function MyJobsPage() {
         const convResults = await Promise.all(convPromises);
         setPingCounts(Object.fromEntries(pingResults));
         setConvCounts(Object.fromEntries(convResults));
-      } catch (error) {
+        setLoadError(null);
+      } catch (error: any) {
         console.error(error);
+        setLoadError(String(error?.message || error));
       } finally {
         setLoading(false);
       }
@@ -97,8 +100,38 @@ export default function MyJobsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">My Jobs</h1>
+            <p className="text-muted-foreground text-sm mt-1">Manage your job postings.</p>
+          </div>
+          <div>
+            <div className="h-8 w-32 bg-muted rounded animate-pulse" />
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="p-4 border rounded-lg">
+              <div className="h-4 w-48 bg-muted rounded animate-pulse mb-3" />
+              <div className="h-3 w-32 bg-muted rounded animate-pulse mb-2" />
+              <div className="h-3 w-full bg-muted rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4">
+        <p className="text-destructive">Failed to load your jobs: {loadError}</p>
+        <div className="flex gap-2">
+          <Button onClick={() => { setLoading(true); setLoadError(null); setJobs([]); setTimeout(() => window.location.reload(), 100); }}>Retry</Button>
+          <Button variant="outline" onClick={() => window.location.href = '/dashboard'}>Back</Button>
+        </div>
       </div>
     );
   }
