@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Briefcase, Award, Settings, CheckCircle2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { WorkerProfileForm } from '@/components/worker/worker-profile-form';
+import { getWorkerProfile } from '@/lib/firestore';
 import { StarRatingDisplay } from '@/components/shared/star-rating';
 import { BadgeDisplay } from '@/components/shared/badge-display';
 import { useAuth } from '@/lib/auth-context';
@@ -22,44 +23,48 @@ import { cn } from '@/lib/utils';
 import { EMPTY_BADGE_COUNTS } from '@/lib/badge-config';
 import type { WorkerProfile } from '@/lib/types';
 
-// Mock profile — replaced once Firebase is wired
-const MOCK_PROFILE: WorkerProfile = {
-  uid: 'mock',
-  displayName: 'Alex Martinez',
-  avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
-  title: 'Lead Carpenter',
-  location: { lat: 40.68, lng: -73.94, address: 'Brooklyn, NY' },
-  summary:
-    'Versatile trades professional with 8+ years of experience in commercial and residential settings. Strong focus on quality craftsmanship and safety.',
-  skills: ['Finish Carpentry', 'Framing', 'Drywall', 'Blueprint Reading'],
-  isLookingForWork: true,
-  experience: [
-    {
-      title: 'Lead Carpenter',
-      company: 'BuildRight Contractors',
-      duration: '2018 – Present',
-      description: 'Led a team of 3 carpenters on residential renovation projects.',
-    },
-  ],
-  education: [
-    {
-      degree: 'Vocational Certificate in Carpentry',
-      institution: 'Brooklyn Technical College',
-      year: '2016',
-    },
-  ],
-  averageRating: 4.7,
-  reviewCount: 12,
-  badgeCounts: { punctual: 5, reliable: 8, quality: 3, professional: 2, goes_above: 1 },
-  updatedAt: new Date().toISOString(),
-};
-
 export default function WorkerProfilePage() {
   const { userDoc } = useAuth();
-  const [profile] = useState<WorkerProfile>(MOCK_PROFILE);
+  const [profile, setProfile] = useState<WorkerProfile | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const displayProfile = profile;
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (!userDoc?.uid) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const p = await getWorkerProfile(userDoc.uid);
+        if (active) setProfile(p ?? null);
+      } catch (err) {
+        console.error('Failed to load worker profile', err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => { active = false; };
+  }, [userDoc?.uid]);
+
+  const displayProfile = profile ?? {
+    uid: userDoc?.uid ?? 'unknown',
+    displayName: userDoc?.displayName ?? 'Worker',
+    avatarUrl: undefined,
+    title: '',
+    location: undefined,
+    summary: '',
+    skills: [],
+    isLookingForWork: true,
+    experience: [],
+    education: [],
+    averageRating: 0,
+    reviewCount: 0,
+    badgeCounts: { punctual: 0, reliable: 0, quality: 0, professional: 0, goes_above: 0 },
+    updatedAt: new Date().toISOString(),
+  } as WorkerProfile;
 
   return (
     <>

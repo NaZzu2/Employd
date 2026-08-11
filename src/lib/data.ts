@@ -88,8 +88,8 @@ export const jobs: Job[] = [
 ];
 
 export const userProfile: UserProfile = {
-    name: 'Alex Martinez',
-    email: 'alex.martinez@example.com',
+  name: 'Demo Worker',
+  email: 'worker@example.com',
     avatarUrl: findImage('user-avatar-1').imageUrl,
     title: 'Skilled Trades Professional',
     location: 'Brooklyn, NY',
