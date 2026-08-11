@@ -9,6 +9,7 @@ import {
   query,
   where,
   orderBy,
+  startAfter,
   limit,
   serverTimestamp,
   increment,
@@ -168,6 +169,52 @@ export function subscribeToActiveJobPosts(
       onChange(jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()));
     },
   );
+}
+
+/** Paginated fetch for active job posts. Returns jobs and `last` cursor (ISO postedAt) */
+export async function getActiveJobPostsPage(
+  pageSize = 10,
+  startAfterPostedAt?: string,
+): Promise<{ jobs: JobPost[]; last?: string }> {
+  const clauses: any[] = [where('status', '==', 'active'), orderBy('postedAt', 'desc')];
+  if (startAfterPostedAt) clauses.push(startAfter(startAfterPostedAt));
+  clauses.push(limit(pageSize));
+
+  const snap = await getDocs(query(collection(db, 'jobPosts'), ...clauses));
+  const jobs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost));
+  const last = jobs.length ? jobs[jobs.length - 1].postedAt : undefined;
+  return { jobs, last };
+}
+
+/** Paginated fetch for employer job posts (by employerId). */
+export async function getEmployerJobPostsPage(
+  employerId: string,
+  pageSize = 10,
+  startAfterPostedAt?: string,
+): Promise<{ jobs: JobPost[]; last?: string }> {
+  const clauses: any[] = [where('employerId', '==', employerId), orderBy('postedAt', 'desc')];
+  if (startAfterPostedAt) clauses.push(startAfter(startAfterPostedAt));
+  clauses.push(limit(pageSize));
+
+  const snap = await getDocs(query(collection(db, 'jobPosts'), ...clauses));
+  const jobs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost));
+  const last = jobs.length ? jobs[jobs.length - 1].postedAt : undefined;
+  return { jobs, last };
+}
+
+/** Paginated worker profiles for listing pages */
+export async function getWorkerProfilesPage(
+  pageSize = 10,
+  startAfterUpdatedAt?: string,
+): Promise<{ profiles: WorkerProfile[]; last?: string }> {
+  const clauses: any[] = [orderBy('updatedAt', 'desc')];
+  if (startAfterUpdatedAt) clauses.push(startAfter(startAfterUpdatedAt));
+  clauses.push(limit(pageSize));
+
+  const snap = await getDocs(query(collection(db, 'workerProfiles'), ...clauses));
+  const profiles = snap.docs.map((d) => d.data() as WorkerProfile);
+  const last = profiles.length ? profiles[profiles.length - 1].updatedAt : undefined;
+  return { profiles, last };
 }
 
 export async function updateJobPostStatus(id: string, status: 'active' | 'closed') {

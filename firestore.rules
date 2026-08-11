@@ -56,10 +56,11 @@ service cloud.firestore {
       allow update: if request.auth != null
         && (resource.data.employerId == request.auth.uid
             || resource.data.workerId == request.auth.uid);
-      // Both employers and workers can START a new conversation
+      // Only employers may START a new conversation (workers should ping jobs instead)
       allow create: if request.auth != null
-        && (request.resource.data.employerId == request.auth.uid
-            || request.resource.data.workerId == request.auth.uid);
+        && request.resource.data.employerId == request.auth.uid
+        // require minimal fields on create
+        && request.resource.data.keys().hasAll(['employerId', 'workerId', 'employerName', 'workerName', 'createdAt']);
       // Conversations cannot be deleted
       allow delete: if false;
 
