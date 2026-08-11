@@ -348,6 +348,10 @@ export async function startConversation(
   jobPostId?: string,
   jobTitle?: string,
 ): Promise<string> {
+  // Only users with employer role may start new conversations.
+  if (employer.role !== 'employer') {
+    throw new Error('Only employers may start new conversations.');
+  }
   // Reset monthly counter if needed
   let threadsUsed = employer.monthlyThreadsStarted;
   const resetUpdates: { monthlyThreadsStarted: number; monthlyThreadsResetAt: string } = {

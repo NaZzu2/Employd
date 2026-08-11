@@ -16,7 +16,7 @@ import { isWithinRange } from '@/lib/utils';
 import { EmployeeJobCard } from '@/components/employee/employee-job-card';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { getUserDoc, getOrCreateConversation } from '@/lib/firestore';
+import { getUserDoc, findExistingConversation } from '@/lib/firestore';
 import type { JobPost } from '@/lib/types';
 
 export default function WorkerJobsPage() {
@@ -96,15 +96,16 @@ export default function WorkerJobsPage() {
       }
       const employerDoc = await getUserDoc(job.employerId);
       if (!employerDoc) throw new Error('Employer profile not found');
-      const { conversationId } = await getOrCreateConversation(
-        employerDoc,
-        userDoc.uid,
-        userDoc.displayName,
-        job.id,
-        job.title,
-      );
-      toast({ title: 'Conversation started', description: `Conversation started with ${job.companyName}.` });
-      router.push(`/worker/messages/${conversationId}`);
+      const existing = await findExistingConversation(employerDoc.uid, userDoc.uid);
+      if (existing) {
+        router.push(`/worker/messages/${existing}`);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Cannot start conversation',
+          description: 'Only employers can start new conversations. Use "Interested" to notify the employer instead.',
+        });
+      }
     } catch (error: any) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Unable to start conversation', description: error?.message ?? 'Try again later.' });
