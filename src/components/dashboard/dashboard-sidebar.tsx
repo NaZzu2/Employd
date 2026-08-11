@@ -31,7 +31,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/lib/auth-context';
 import { threadsRemaining } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { getEmployerProfile } from '@/lib/firestore';
+import { getEmployerProfile, subscribeToUserContracts } from '@/lib/firestore';
 
 const navItems = [
   { href: '/dashboard', icon: Users, label: 'Dashboard Home', exact: true },
@@ -53,6 +53,7 @@ export function DashboardSidebar() {
 
   // Whether the employer still needs to complete setup
   const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
+  const [pendingCount, setPendingCount] = useState<number>(0);
 
   useEffect(() => {
     let active = true;
@@ -71,6 +72,19 @@ export function DashboardSidebar() {
     };
     load();
     return () => { active = false; };
+  }, [userDoc?.uid, userDoc?.role]);
+
+  // Subscribe to live contract updates to show pending count badge
+  useEffect(() => {
+    if (!userDoc || userDoc.role !== 'employer') {
+      setPendingCount(0);
+      return;
+    }
+    const unsub = subscribeToUserContracts(userDoc.uid, 'employer', (cs) => {
+      const pending = cs.filter((c) => (c.status === 'pending_worker_acceptance')).length;
+      setPendingCount(pending);
+    });
+    return () => unsub();
   }, [userDoc?.uid, userDoc?.role]);
 
   const remaining = userDoc
@@ -111,6 +125,11 @@ export function DashboardSidebar() {
                     <SidebarMenuButton isActive={isActive} tooltip={{ children: item.label }}>
                       <item.icon />
                       <span>{item.label}</span>
+                      {item.href === '/dashboard/contracts' && pendingCount > 0 && (
+                        <Badge variant="secondary" className="ml-auto text-xs">
+                          {pendingCount}
+                        </Badge>
+                      )}
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>
