@@ -629,11 +629,11 @@ export function subscribeToUserContracts(
   onChange: (contracts: Contract[]) => void,
 ): Unsubscribe {
   const field = role === 'employer' ? 'employerId' : 'workerId';
-  // Subscribe to contracts that are not yet completed (pending, active, declined)
+  // Subscribe to contracts for the user (including completed)
   const q = query(
     collection(db, 'contracts'),
     where(field, '==', uid),
-    where('status', 'in', ['pending_worker_acceptance', 'active', 'declined']),
+    where('status', 'in', ['pending_worker_acceptance', 'active', 'declined', 'completed']),
   );
   return onSnapshot(q, (snap) => {
     const cs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Contract));
