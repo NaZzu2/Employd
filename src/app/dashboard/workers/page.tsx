@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users, Search, SlidersHorizontal, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import { getAllWorkerProfiles, getEmployerProfile, startConversation } from '@/lib/firestore';
+import { getAllWorkerProfiles, getEmployerProfile, startConversation, createContract } from '@/lib/firestore';
 import { haversineDistanceKm } from '@/lib/utils';
 import { WorkerCard } from '@/components/dashboard/worker-card';
 import { Input } from '@/components/ui/input';
@@ -122,6 +122,25 @@ export default function WorkersPage() {
       toast({ variant: 'destructive', title: 'Could not start conversation', description: err?.message });
     } finally {
       setMessagingWorkerId(null);
+    }
+  };
+
+  const handleMarkHired = async (worker: WorkerProfile) => {
+    if (!userDoc) return;
+    try {
+      await createContract({
+        employerId: userDoc.uid,
+        employerName: userDoc.displayName,
+        workerId: worker.uid,
+        workerName: worker.displayName,
+        // No job context when hiring from the general worker list
+        jobPostId: '',
+        jobTitle: '',
+      });
+      toast({ title: 'Marked as hired', description: 'Contract created and awaiting worker acceptance.' });
+    } catch (err: any) {
+      console.error('[Workers] Mark hired error:', err);
+      toast({ variant: 'destructive', title: 'Could not mark as hired', description: err?.message });
     }
   };
 
@@ -306,6 +325,7 @@ export default function WorkersPage() {
               worker={worker}
               distanceKm={getDistance(worker)}
               onStartConversation={handleStartConversation}
+              onMarkHired={handleMarkHired}
               messagingLoading={messagingWorkerId === worker.uid}
             />
           ))}
