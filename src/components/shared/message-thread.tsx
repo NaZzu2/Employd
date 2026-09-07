@@ -11,6 +11,7 @@ import { hasValidConfig } from '@/lib/firebase';
 import { FINNISH_WORKERS } from '@/lib/data';
 import { useAuth } from '@/lib/auth-context';
 import type { Message, UserRole } from '@/lib/types';
+import { MAX_MESSAGE_LENGTH } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 // ─── Timestamp helpers ────────────────────────────────────────────────────────
@@ -143,7 +144,12 @@ export function MessageThread({
   }, [messages, conversationId, userDoc]);
 
   const handleSend = useCallback(async () => {
-    if (!text.trim() || !userDoc) return;
+    const trimmed = text.trim();
+    if (!trimmed || !userDoc) return;
+    if (trimmed.length > MAX_MESSAGE_LENGTH) {
+      toast({ variant: 'destructive', title: 'Message too long', description: `Max ${MAX_MESSAGE_LENGTH} characters.` });
+      return;
+    }
     setSending(true);
     const optimistic: Message = {
       id: `tmp-${Date.now()}`,
@@ -299,23 +305,29 @@ export function MessageThread({
           <span>Waiting for the employer to start the conversation…</span>
         </div>
       ) : (
-        <div className="border-t p-3 flex gap-2 items-end">
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message… (Enter to send)"
-            rows={1}
-            className="resize-none flex-1 min-h-[40px] max-h-[120px]"
-          />
-          <Button
-            size="icon"
-            onClick={handleSend}
-            disabled={!text.trim() || sending}
-            className="shrink-0"
-          >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
+        <div className="border-t p-3 flex flex-col gap-1">
+          <div className="flex gap-2 items-end">
+            <Textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message… (Enter to send)"
+              rows={1}
+              maxLength={MAX_MESSAGE_LENGTH + 200}
+              className={cn('resize-none flex-1 min-h-[40px] max-h-[120px]', text.length > MAX_MESSAGE_LENGTH && 'border-destructive')}
+            />
+            <Button
+              size="icon"
+              onClick={handleSend}
+              disabled={!text.trim() || sending || text.length > MAX_MESSAGE_LENGTH}
+              className="shrink-0"
+            >
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
+          <span className={cn('text-[11px] self-end text-muted-foreground', text.length > MAX_MESSAGE_LENGTH && 'text-destructive')}>
+            {text.length} / {MAX_MESSAGE_LENGTH}
+          </span>
         </div>
       )}
     </div>

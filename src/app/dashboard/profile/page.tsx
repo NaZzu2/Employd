@@ -134,8 +134,8 @@ export default function ProfilePage() {
                     <div className="space-y-2">
                         <Label>Address</Label>
                         <Input
-                            value={profile.location.address}
-                            onChange={(e) => setProfile({ ...profile, location: { ...profile.location, address: e.target.value } })}
+                            value={profile.location?.address ?? ''}
+                            onChange={(e) => setProfile({ ...profile, location: { lat: profile.location?.lat ?? 0, lng: profile.location?.lng ?? 0, address: e.target.value } })}
                         />
                     </div>
 
@@ -144,16 +144,16 @@ export default function ProfilePage() {
                             <Label>Latitude</Label>
                             <Input
                                 type="number"
-                                value={profile.location.lat}
-                                onChange={(e) => setProfile({ ...profile, location: { ...profile.location, lat: Number(e.target.value) || 0 } })}
+                                value={profile.location?.lat ?? 0}
+                                onChange={(e) => setProfile({ ...profile, location: { lat: Number(e.target.value) || 0, lng: profile.location?.lng ?? 0, address: profile.location?.address ?? '' } })}
                             />
                         </div>
                         <div className="space-y-2">
                             <Label>Longitude</Label>
                             <Input
                                 type="number"
-                                value={profile.location.lng}
-                                onChange={(e) => setProfile({ ...profile, location: { ...profile.location, lng: Number(e.target.value) || 0 } })}
+                                value={profile.location?.lng ?? 0}
+                                onChange={(e) => setProfile({ ...profile, location: { lat: profile.location?.lat ?? 0, lng: Number(e.target.value) || 0, address: profile.location?.address ?? '' } })}
                             />
                         </div>
                     </div>
@@ -188,7 +188,7 @@ export default function ProfilePage() {
                 <CardContent className="space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        {profile.location.address}
+                        {profile.location?.address || 'No address set'}
                     </div>
                     <p>{profile.description}</p>
                 </CardContent>

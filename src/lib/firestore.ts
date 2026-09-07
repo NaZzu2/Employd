@@ -34,7 +34,7 @@ import type {
   UserDoc,
 } from '@/lib/types';
 import { shouldResetMonthlyThreads, canStartThread } from '@/lib/utils';
-import { THREAD_LIMITS, BADGE_LIMITS } from '@/lib/types';
+import { THREAD_LIMITS, BADGE_LIMITS, MAX_MESSAGE_LENGTH, MESSAGE_MIN_INTERVAL_MS } from '@/lib/types';
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
@@ -460,9 +460,35 @@ export async function sendMessage(
   conversationId: string,
   message: Omit<Message, 'id' | 'createdAt'>,
 ): Promise<void> {
+  const trimmedText = message.text.trim();
+  if (trimmedText.length === 0) {
+    throw new Error('Message cannot be empty.');
+  }
+  if (trimmedText.length > MAX_MESSAGE_LENGTH) {
+    throw new Error(`Message is too long (max ${MAX_MESSAGE_LENGTH} characters).`);
+  }
+
+  // Rate-limit: check the sender's most recent message in this conversation
+  const lastOwnMsgSnap = await getDocs(
+    query(
+      collection(db, 'conversations', conversationId, 'messages'),
+      where('senderId', '==', message.senderId),
+      orderBy('createdAt', 'desc'),
+      limit(1),
+    ),
+  );
+  if (!lastOwnMsgSnap.empty) {
+    const lastCreatedAt = (lastOwnMsgSnap.docs[0].data() as Message).createdAt;
+    const elapsed = Date.now() - new Date(lastCreatedAt).getTime();
+    if (elapsed < MESSAGE_MIN_INTERVAL_MS) {
+      throw new Error('You are sending messages too quickly. Please wait a moment.');
+    }
+  }
+
   const now = new Date().toISOString();
   await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
     ...message,
+    text: trimmedText,
     createdAt: now,
   });
   await updateDoc(doc(db, 'conversations', conversationId), {

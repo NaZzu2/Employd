@@ -4,6 +4,10 @@ export type UserRole = 'employer' | 'worker';
 export type SubscriptionTier = 'free' | 'pro' | 'enterprise';
 export type BadgeType = 'punctual' | 'reliable' | 'quality' | 'professional' | 'goes_above';
 
+// ─── Messaging limits ────────────────────────────────────────────────────────
+export const MAX_MESSAGE_LENGTH = 2000;
+export const MESSAGE_MIN_INTERVAL_MS = 5000;
+
 // Thread limits per subscription tier (employer-only)
 export const THREAD_LIMITS: Record<SubscriptionTier, number> = {
   free: 10,

@@ -5,7 +5,8 @@ import { cookies } from 'next/headers';
 export async function POST(req: Request) {
   const body = await req.json();
   const planId = body.planId as string;
-  const userId = body.userId || cookies().get('userId')?.value || null;
+  const cookieStore = await cookies();
+  const userId = body.userId || cookieStore.get('userId')?.value || null;
   if (!planId) return NextResponse.json({ error: 'planId required' }, { status: 400 });
 
   const session = await createCheckoutSession(userId, planId);

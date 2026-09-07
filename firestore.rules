@@ -72,10 +72,13 @@ service cloud.firestore {
               || get(/databases/$(database)/documents/conversations/$(convId)).data.workerId == request.auth.uid);
 
         // Either party can create a message (senderId must match caller)
+        // Message text must be non-empty and no longer than 2000 characters.
         allow create: if request.auth != null
           && (get(/databases/$(database)/documents/conversations/$(convId)).data.employerId == request.auth.uid
               || get(/databases/$(database)/documents/conversations/$(convId)).data.workerId == request.auth.uid)
-          && request.resource.data.senderId == request.auth.uid;
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000;
 
         // Either party can update ONLY the seenAt field (read receipts).
         // The updater must NOT be the original sender (you can't mark your own as seen).

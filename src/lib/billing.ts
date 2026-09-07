@@ -1,7 +1,6 @@
 import type { Plan } from './types';
-import admin from 'firebase-admin';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const BILLING_MODE = process.env.BILLING_MODE || 'mock';
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || '';
@@ -45,7 +44,7 @@ export async function createCheckoutSession(userId: string | null, planId: strin
   if (!STRIPE_KEY) throw new Error('Stripe not configured');
   // Lazy import to avoid bringing stripe into dev unless used
   const Stripe = (await import('stripe')).default;
-  const stripe = new Stripe(STRIPE_KEY, { apiVersion: '2022-11-15' });
+  const stripe = new Stripe(STRIPE_KEY, { apiVersion: '2022-11-15' as any });
   const plan = PLANS.find((p) => p.id === planId);
   if (!plan) throw new Error('Plan not found');
 
@@ -77,7 +76,7 @@ export async function applySubscription(userId: string, planId: string): Promise
     const userRef = db.collection('users').doc(userId);
     const employerRef = db.collection('employerProfiles').doc(userId);
     await userRef.set({ subscriptionTier: planId, monthlyThreadsStarted: 0 }, { merge: true });
-    await employerRef.set({ subscriptionTier: planId, updatedAt: admin.firestore.FieldValue.serverTimestamp() } as any, { merge: true });
+    await employerRef.set({ subscriptionTier: planId, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   } catch (err) {
     // If admin updates fail (e.g., missing service account), log and rethrow to surface during server ops
     console.warn('applySubscription: admin update failed or not available', err);
