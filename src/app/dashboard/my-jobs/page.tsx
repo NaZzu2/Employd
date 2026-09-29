@@ -42,8 +42,8 @@ export default function MyJobsPage() {
         const employerJobs = await getEmployerJobPosts(userDoc.uid);
         setJobs(employerJobs);
 
-        const pingPromises = employerJobs.map(async (job) => [job.id, (await getJobPings(job.id)).length] as const);
-        const convPromises = employerJobs.map(async (job) => [job.id, (await getJobConversationCount(job.id))] as const);
+        const pingPromises = employerJobs.map(async (job) => [job.id, (await getJobPings(job.id, userDoc.uid)).length] as const);
+        const convPromises = employerJobs.map(async (job) => [job.id, (await getJobConversationCount(job.id, userDoc.uid))] as const);
         const pingResults = await Promise.all(pingPromises);
         const convResults = await Promise.all(convPromises);
         setPingCounts(Object.fromEntries(pingResults));

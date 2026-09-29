@@ -281,11 +281,13 @@ export async function getWorkerPingForJob(workerId: string, jobPostId: string): 
 }
 
 /** Returns all pings for a specific job post. */
-export async function getJobPings(jobPostId: string): Promise<Ping[]> {
+export async function getJobPings(jobPostId: string, employerId?: string): Promise<Ping[]> {
+  const filters = [where('jobPostId', '==', jobPostId)];
+  if (employerId) filters.push(where('employerId', '==', employerId));
   const snap = await getDocs(
     query(
       collection(db, 'pings'),
-      where('jobPostId', '==', jobPostId),
+      ...filters,
     ),
   );
   const pings = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Ping));
@@ -293,11 +295,13 @@ export async function getJobPings(jobPostId: string): Promise<Ping[]> {
 }
 
 /** Convenience: count of pings for a job post */
-export async function getJobPingCount(jobPostId: string): Promise<number> {
+export async function getJobPingCount(jobPostId: string, employerId?: string): Promise<number> {
+  const filters = [where('jobPostId', '==', jobPostId)];
+  if (employerId) filters.push(where('employerId', '==', employerId));
   const snap = await getDocs(
     query(
       collection(db, 'pings'),
-      where('jobPostId', '==', jobPostId),
+      ...filters,
     ),
   );
   return snap.size;
@@ -328,11 +332,13 @@ export async function getJobViewCount(jobId: string): Promise<number> {
 }
 
 /** Returns number of conversations tied to a job post */
-export async function getJobConversationCount(jobId: string): Promise<number> {
+export async function getJobConversationCount(jobId: string, employerId?: string): Promise<number> {
+  const filters = [where('jobPostId', '==', jobId)];
+  if (employerId) filters.push(where('employerId', '==', employerId));
   const snap = await getDocs(
     query(
       collection(db, 'conversations'),
-      where('jobPostId', '==', jobId),
+      ...filters,
     ),
   );
   return snap.size;

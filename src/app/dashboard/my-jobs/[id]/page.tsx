@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getJobPost, getJobPings, updateJobPostStatus } from '@/lib/firestore';
+import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import type { JobPost, Ping } from '@/lib/types';
 import { timeAgo } from '@/lib/utils';
@@ -23,24 +24,25 @@ export default function JobDetailPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { userDoc } = useAuth();
 
   const id = typeof params.id === 'string' ? params.id : '';
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !userDoc?.uid) return;
 
     const load = async () => {
       const jobPost = await getJobPost(id);
       setJob(jobPost);
       if (jobPost) {
-        const jobPings = await getJobPings(id);
+        const jobPings = await getJobPings(id, userDoc.uid);
         setPings(jobPings);
       }
       setLoading(false);
     };
 
     load().catch(() => setLoading(false));
-  }, [id]);
+  }, [id, userDoc?.uid]);
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-[40vh]"><Loader2 className="h-8 w-8 animate-spin" /></div>;

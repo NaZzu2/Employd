@@ -28,7 +28,7 @@ export default function InterestedWorkersPage() {
   const [hiringId, setHiringId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !userDoc?.uid) return;
     let mounted = true;
     const load = async () => {
       try {
@@ -40,7 +40,7 @@ export default function InterestedWorkersPage() {
           router.push('/dashboard/my-jobs');
           return;
         }
-        const jobPings = await getJobPings(id);
+        const jobPings = await getJobPings(id, userDoc.uid);
         if (!mounted) return;
         setPings(jobPings);
       } catch (e) {
@@ -52,7 +52,7 @@ export default function InterestedWorkersPage() {
     };
     load();
     return () => { mounted = false; };
-  }, [id, router, toast]);
+  }, [id, router, toast, userDoc?.uid]);
 
   useEffect(() => {
     if (sort === 'recent') {
