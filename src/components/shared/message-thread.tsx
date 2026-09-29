@@ -52,6 +52,8 @@ interface MessageThreadProps {
   /** When true, the worker cannot send — employer hasn't started yet */
   workerLocked?: boolean;
   isWorkerLocked?: boolean;
+  /** When true, the contract for this pair has been accepted — thread is read-only for both parties */
+  locked?: boolean;
 }
 
 export function MessageThread({
@@ -61,6 +63,7 @@ export function MessageThread({
   viewerRole,
   workerLocked = false,
   isWorkerLocked = false,
+  locked = false,
 }: MessageThreadProps) {
   const { userDoc } = useAuth();
   const { toast } = useToast();
@@ -209,7 +212,7 @@ export function MessageThread({
   const hasEmployerMessages = messages.some((m) => m.senderRole === 'employer');
   
   // The worker is locked if the employer has not sent any message yet
-  const sendingBlocked = viewerRole === 'worker' && (!hasEmployerMessages || workerLocked || isWorkerLocked);
+  const sendingBlocked = locked || (viewerRole === 'worker' && (!hasEmployerMessages || workerLocked || isWorkerLocked));
 
   if (loading) {
     return (
@@ -302,7 +305,11 @@ export function MessageThread({
       {sendingBlocked ? (
         <div className="border-t p-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Lock className="h-4 w-4" />
-          <span>Waiting for the employer to start the conversation…</span>
+          <span>
+            {locked
+              ? 'This conversation is locked — the contract has been agreed by both parties.'
+              : 'Waiting for the employer to start the conversation…'}
+          </span>
         </div>
       ) : (
         <div className="border-t p-3 flex flex-col gap-1">

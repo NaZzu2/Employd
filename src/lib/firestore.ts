@@ -603,6 +603,30 @@ export async function workerRespondToContract(
     status,
     workerRespondedAt: new Date().toISOString(),
   });
+
+  // Once both parties have agreed (worker accepted), lock the chat thread for this pair.
+  if (accept) {
+    await lockConversationForContract(contractId);
+  }
+}
+
+/**
+ * Locks the conversation between the contract's employer/worker pair once a
+ * contract has been accepted by both sides. Messages remain visible (not
+ * deleted); only new sends are blocked.
+ */
+export async function lockConversationForContract(contractId: string): Promise<void> {
+  const contractSnap = await getDoc(doc(db, 'contracts', contractId));
+  if (!contractSnap.exists()) return;
+  const contract = contractSnap.data() as Contract;
+
+  const conversationId = await findExistingConversation(contract.employerId, contract.workerId);
+  if (!conversationId) return;
+
+  await updateDoc(doc(db, 'conversations', conversationId), {
+    locked: true,
+    contractId,
+  });
 }
 
 /** Add a one-off message under a contract (e.g., employee's rejection note) */

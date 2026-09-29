@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { MessageSquare, Clock, Zap } from 'lucide-react';
+import { MessageSquare, Clock, Zap, Lock } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -145,6 +145,12 @@ export default function MessagesPage() {
                       {conv.jobTitle && (
                         <Badge variant="secondary" className="text-xs hidden sm:inline-flex">
                           {conv.jobTitle}
+                        </Badge>
+                      )}
+                      {conv.locked && (
+                        <Badge variant="outline" className="text-xs gap-1">
+                          <Lock className="h-3 w-3" />
+                          Locked
                         </Badge>
                       )}
                     </div>

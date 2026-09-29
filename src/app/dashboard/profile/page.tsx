@@ -13,9 +13,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import type { EmployerProfile } from '@/lib/types';
 import { THREAD_LIMITS } from '@/lib/types';
+
+const INDUSTRY_OPTIONS = ['Construction', 'Manufacturing', 'Services', 'IT', 'Other'];
 
 export default function ProfilePage() {
     const { userDoc } = useAuth();
@@ -122,7 +125,16 @@ export default function ProfilePage() {
                         </div>
                         <div className="space-y-2">
                             <Label>Industry</Label>
-                            <Input value={profile.industry} onChange={(e) => setProfile({ ...profile, industry: e.target.value })} />
+                            <Select value={profile.industry} onValueChange={(value) => setProfile({ ...profile, industry: value })}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select an industry" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {INDUSTRY_OPTIONS.map((option) => (
+                                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 

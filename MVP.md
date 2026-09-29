@@ -46,31 +46,33 @@ A working product usable today by a real employer (desktop browser) and a real e
 - [x] `firestore.rules` `conversations` `allow create` requires `employerId == request.auth.uid` — correct, no change needed.
 - [x] Worker is locked out of sending the first message until the employer has sent one ([src/components/shared/message-thread.tsx](src/components/shared/message-thread.tsx)) — correct, no change needed.
 
-### 2. Chat: Disable after contract accepted (both parties agreed)
-- [ ] Add a `contractId?` and `locked?: boolean` field to the `Conversation` type in [src/lib/types.ts](src/lib/types.ts).
-- [ ] When a worker accepts a contract (`workerRespondToContract(id, true)`), find the conversation between the same employer/worker pair (and job, if applicable) and set `locked: true` on it.
-- [ ] Update `firestore.rules` `messages` `allow create` to also check `get(conversation).data.locked != true`.
-- [ ] Update `MessageThread` to render a read-only banner ("This conversation is locked — contract has been agreed") and hide/disable the input when `locked === true`. Existing messages remain visible (not deleted).
-- [ ] Update employer and worker conversation list items to show a "Locked" badge/icon for locked threads.
+### 2. Chat: Disable after contract accepted (both parties agreed) — ✅ Implemented
+- [x] Added `contractId?` and `locked?: boolean` fields to the `Conversation` type in [src/lib/types.ts](src/lib/types.ts).
+- [x] `workerRespondToContract(id, true)` now calls `lockConversationForContract` in [src/lib/firestore.ts](src/lib/firestore.ts), which finds the conversation between the same employer/worker pair and sets `locked: true` on it.
+- [x] `firestore.rules` `messages` `allow create` now checks `.data.get('locked', false) != true`.
+- [x] `MessageThread` renders a read-only banner ("This conversation is locked — the contract has been agreed by both parties.") and hides the input for both parties when `locked === true`.
+- [x] Employer and worker conversation list items show a "Locked" badge for locked threads.
 
-### 3. Profiles — verify full create/edit parity
-- [ ] Confirm employer profile form persists `role='employer'` on `users/{uid}` at signup time (currently only in `employerProfiles/{uid}`, per task_4 A1 gap) — add if missing.
-- [ ] Confirm industry field is a constrained input (dropdown: Construction, Manufacturing, Services, IT, Other) rather than free text, per original spec (currently a free-text `Input`).
-- [ ] Verify worker profile edit form covers all fields workers need to be discoverable (skills, location, looking-for-work toggle, avatar).
+### 3. Profiles — verify full create/edit parity — ✅ Verified/fixed
+- [x] Confirmed `role='employer'`/`role='worker'` is already persisted on `users/{uid}` at signup time in [src/lib/auth-context.tsx](src/lib/auth-context.tsx) `signUp` — no gap, task_4 note was stale.
+- [x] Industry field on [src/app/dashboard/profile/page.tsx](src/app/dashboard/profile/page.tsx) converted to a constrained dropdown (Construction, Manufacturing, Services, IT, Other).
+- [x] Worker profile edit form ([src/components/worker/worker-profile-form.tsx](src/components/worker/worker-profile-form.tsx)) confirmed to cover title, location, summary, skills, and looking-for-work toggle. Avatar upload is not implemented (falls back to initials avatar everywhere) — acceptable gap for MVP, not blocking.
 
-### 4. Review & badge system — confirm contract-gating end-to-end
-- [ ] Verify UI only allows submitting a review when a `contract` between the two parties exists and is `active` or `completed` (not before) — audit [src/app/dashboard/reviews/page.tsx](src/app/dashboard/reviews/page.tsx) and [src/app/worker/reviews/page.tsx](src/app/worker/reviews/page.tsx), which currently mix in mock data; replace mock arrays with real Firestore-backed contract/review fetches.
-- [ ] Confirm one review per contract per reviewer is enforced (`getReviewForContract`-style check before allowing submission).
+### 4. Review & badge system — confirm contract-gating end-to-end — ✅ Implemented
+- [x] Both [src/app/dashboard/reviews/page.tsx](src/app/dashboard/reviews/page.tsx) and [src/app/worker/reviews/page.tsx](src/app/worker/reviews/page.tsx) rewritten to use real Firestore data: live contracts via `subscribeToUserContracts`, real reviews via `getReviewsForUser`, real rating/badge totals from `userDoc`. Mock arrays removed.
+- [x] "Leave Review" is only offered for contracts with status `active` or `completed` (i.e. once accepted by both parties), matching the MVP requirement that reviews unlock right after contract acceptance, not only after completion.
+- [x] One review per contract per reviewer enforced in the UI via `hasReviewedContract` — once reviewed, the button is replaced with a "Reviewed" badge.
 
 ### 5. Mobile verification (employee = phone, browser = employer)
-- [ ] Manual pass on a real phone browser: signup, profile edit, job browse, ping, start chat, accept contract, review — confirm no layout breakage, tap targets ≥40px, no horizontal scroll.
-- [ ] Confirm `/dashboard/*` remains usable as a normal desktop browser page (no forced mobile constraint).
+- [x] Code-level review: [src/app/worker/layout.tsx](src/app/worker/layout.tsx) constrains to phone width (`max-w-lg`) with a sticky bottom nav (`h-16`, well above the 40px tap-target minimum); [src/app/dashboard/layout.tsx](src/app/dashboard/layout.tsx) uses the full-width sidebar layout with no mobile constraint.
+- [ ] **Still requires a human pass on a real phone browser** (this environment has no device/browser access) — signup, profile edit, job browse, ping, start chat, accept contract, review. Confirm no horizontal scroll and comfortable tap targets in practice, not just in code.
 
 ### 6. Environment & local runnability
-- [ ] Add `.env.local.example` with the exact Firebase env var names read by [src/lib/firebase.ts](src/lib/firebase.ts) (file does not currently exist in repo root).
-- [ ] Confirm `npm run dev`, `npm run build`, `npm run typecheck`, `npm run lint` all pass cleanly.
+- [x] `.env.local.example` exists at repo root with the exact Firebase env var names read by [src/lib/firebase.ts](src/lib/firebase.ts), plus optional Stripe/billing vars.
+- [ ] `npm run dev` / `npm run build` / `npm run typecheck` / `npm run lint` — **could not be run in this environment** (Node.js/npm is not installed/available here). All edited files were verified error-free via the editor's TypeScript language service (`get_errors`), but a real `npm run build` should still be run before shipping.
 
 ### 7. End-to-end walkthrough (Definition of Done for MVP)
+> **Not executable in this environment** — no Node.js/npm, no browser, no device access here. All steps below are implemented in code and verified error-free by the language service, but require a human to actually run `npm run dev` and click through them against a real Firebase project.
 - [ ] Employer signs up (browser) → completes company profile.
 - [ ] Employer posts a job.
 - [ ] Employee signs up (phone) → completes worker profile.

@@ -68,6 +68,7 @@ export default function ConversationPage({ params }: Props) {
           otherPartyName={otherName}
           otherPartyAvatar={otherAvatar}
           viewerRole="employer"
+          locked={conv?.locked}
         />
       </div>
     </div>

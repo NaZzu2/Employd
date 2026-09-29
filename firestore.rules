@@ -73,9 +73,11 @@ service cloud.firestore {
 
         // Either party can create a message (senderId must match caller)
         // Message text must be non-empty and no longer than 2000 characters.
+        // Blocked once the conversation has been locked (contract accepted by both parties).
         allow create: if request.auth != null
           && (get(/databases/$(database)/documents/conversations/$(convId)).data.employerId == request.auth.uid
               || get(/databases/$(database)/documents/conversations/$(convId)).data.workerId == request.auth.uid)
+          && get(/databases/$(database)/documents/conversations/$(convId)).data.get('locked', false) != true
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.text.size() > 0
           && request.resource.data.text.size() <= 2000;

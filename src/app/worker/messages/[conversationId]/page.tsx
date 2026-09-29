@@ -82,6 +82,7 @@ export default function WorkerConversationPage({ params }: Props) {
           otherPartyAvatar={otherAvatar}
           viewerRole="worker"
           isWorkerLocked={!hasEmployerMessages}
+          locked={conv?.locked}
         />
       </div>
     </div>

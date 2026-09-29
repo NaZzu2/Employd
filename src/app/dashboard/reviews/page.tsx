@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { Star, CheckCircle2, Clock, Award } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Star, CheckCircle2, Award, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -14,67 +14,61 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewForm } from '@/components/shared/review-form';
-import { StarRatingDisplay } from '@/components/shared/star-rating';
 import { BadgeDisplay, BadgeChip } from '@/components/shared/badge-display';
-import { getBadge } from '@/lib/badge-config';
 import { timeAgo } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
-import { markContractComplete } from '@/lib/firestore';
+import {
+  markContractComplete,
+  subscribeToUserContracts,
+  getReviewsForUser,
+  hasReviewedContract,
+} from '@/lib/firestore';
 import type { Contract, Review, BadgeType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { EMPTY_BADGE_COUNTS } from '@/lib/badge-config';
-
-// Mock data for UI preview
-const MOCK_RECEIVED: Review[] = [
-  {
-    id: 'r1',
-    fromUid: 'w1',
-    fromName: 'Alex Martinez',
-    fromRole: 'worker',
-    toUid: 'emp1',
-    stars: 5,
-    badge: 'professional',
-    comment: 'Great employer! Very clear with instructions and paid on time.',
-    contractId: 'ct1',
-    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-  {
-    id: 'r2',
-    fromUid: 'w2',
-    fromName: 'Sam Rivera',
-    fromRole: 'worker',
-    toUid: 'emp1',
-    stars: 4,
-    badge: 'reliable',
-    comment: 'Good experience overall.',
-    contractId: 'ct2',
-    createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
-  },
-];
-
-const MOCK_CONTRACTS: Contract[] = [
-  {
-    id: 'ct3',
-    employerId: 'emp1',
-    employerName: 'AquaFlow Plumbing',
-    workerId: 'w3',
-    workerName: 'Jordan Kim',
-    jobPostId: 'j1',
-    jobTitle: 'Certified Welder',
-    status: 'active',
-    createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-  },
-];
-
-const mockBadgeCounts = { ...EMPTY_BADGE_COUNTS, professional: 1, reliable: 1 };
 
 export default function ReviewsPage() {
   const { userDoc, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [contracts, setContracts] = useState<Contract[]>(MOCK_CONTRACTS);
-  const [received] = useState<Review[]>(MOCK_RECEIVED);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [received, setReceived] = useState<Review[]>([]);
+  const [reviewedContractIds, setReviewedContractIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
   const [reviewTarget, setReviewTarget] = useState<Contract | null>(null);
   const [completing, setCompleting] = useState<string | null>(null);
+
+  // Live contracts for this employer
+  useEffect(() => {
+    if (!userDoc?.uid) { setLoading(false); return; }
+    const unsub = subscribeToUserContracts(userDoc.uid, 'employer', (cs) => {
+      setContracts(cs.filter((c) => c.status === 'active' || c.status === 'completed'));
+      setLoading(false);
+    });
+    return () => unsub();
+  }, [userDoc?.uid]);
+
+  // Received reviews
+  const loadReviews = async () => {
+    if (!userDoc?.uid) return;
+    const rs = await getReviewsForUser(userDoc.uid);
+    setReceived(rs);
+  };
+
+  useEffect(() => {
+    loadReviews().catch(console.error);
+  }, [userDoc?.uid]);
+
+  // Which of the visible contracts has this employer already reviewed?
+  useEffect(() => {
+    if (!userDoc?.uid || contracts.length === 0) return;
+    let active = true;
+    Promise.all(contracts.map((c) => hasReviewedContract(userDoc.uid, c.id).then((r) => [c.id, r] as const)))
+      .then((pairs) => {
+        if (!active) return;
+        setReviewedContractIds(new Set(pairs.filter(([, r]) => r).map(([id]) => id)));
+      })
+      .catch(console.error);
+    return () => { active = false; };
+  }, [contracts, userDoc?.uid]);
 
   const handleMarkComplete = async (contract: Contract) => {
     setCompleting(contract.id);
@@ -91,10 +85,26 @@ export default function ReviewsPage() {
     }
   };
 
-  const avgRating =
-    received.length > 0
-      ? received.reduce((s, r) => s + r.stars, 0) / received.length
-      : 0;
+  const handleReviewSuccess = () => {
+    const justReviewed = reviewTarget;
+    setReviewTarget(null);
+    loadReviews();
+    if (justReviewed) {
+      setReviewedContractIds((prev) => new Set(prev).add(justReviewed.id));
+    }
+  };
+
+  const avgRating = userDoc?.averageRating ?? 0;
+  const reviewCount = userDoc?.reviewCount ?? received.length;
+  const badgeCounts = userDoc?.badgeCounts;
+
+  if (authLoading || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -121,7 +131,7 @@ export default function ReviewsPage() {
             <CardContent className="p-5 flex items-center gap-4">
               <CheckCircle2 className="h-8 w-8 text-accent" />
               <div>
-                <p className="text-2xl font-bold">{received.length}</p>
+                <p className="text-2xl font-bold">{reviewCount}</p>
                 <p className="text-sm text-muted-foreground">Reviews received</p>
               </div>
             </CardContent>
@@ -129,7 +139,11 @@ export default function ReviewsPage() {
           <Card>
             <CardContent className="p-5">
               <p className="text-sm font-medium mb-2">Badges earned</p>
-              <BadgeDisplay badgeCounts={mockBadgeCounts} compact />
+              {badgeCounts ? (
+                <BadgeDisplay badgeCounts={badgeCounts} compact />
+              ) : (
+                <p className="text-xs text-muted-foreground">No badges yet.</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -158,48 +172,53 @@ export default function ReviewsPage() {
                 No active contracts.
               </p>
             ) : (
-              contracts.map((contract) => (
-                <Card key={contract.id}>
-                  <CardContent className="p-4 flex items-center gap-4">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback>{contract.workerName[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm">{contract.workerName}</p>
-                      <p className="text-xs text-muted-foreground">{contract.jobTitle}</p>
-                      <Badge
-                        variant="outline"
-                        className={`mt-1 text-xs ${
-                          contract.status === 'active' ? 'border-accent text-accent' : ''
-                        }`}
-                      >
-                        {contract.status === 'active' ? '🟢 Active' : '✅ Completed'}
-                      </Badge>
-                    </div>
-                    <div className="flex gap-2 shrink-0">
-                      {contract.status === 'active' && (
-                        <Button
-                          size="sm"
+              contracts.map((contract) => {
+                const alreadyReviewed = reviewedContractIds.has(contract.id);
+                return (
+                  <Card key={contract.id}>
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>{contract.workerName[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm">{contract.workerName}</p>
+                        <p className="text-xs text-muted-foreground">{contract.jobTitle}</p>
+                        <Badge
                           variant="outline"
-                          onClick={() => handleMarkComplete(contract)}
-                          disabled={completing === contract.id}
+                          className={`mt-1 text-xs ${
+                            contract.status === 'active' ? 'border-accent text-accent' : ''
+                          }`}
                         >
-                          Mark Complete
-                        </Button>
-                      )}
-                      {contract.status === 'completed' && (
-                        <Button
-                          size="sm"
-                          onClick={() => setReviewTarget(contract)}
-                        >
-                          <Award className="h-3.5 w-3.5 mr-1.5" />
-                          Leave Review
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                          {contract.status === 'active' ? '🟢 Active' : '✅ Completed'}
+                        </Badge>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        {contract.status === 'active' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleMarkComplete(contract)}
+                            disabled={completing === contract.id}
+                          >
+                            Mark Complete
+                          </Button>
+                        )}
+                        {alreadyReviewed ? (
+                          <Badge variant="secondary" className="text-xs self-center">Reviewed</Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => setReviewTarget(contract)}
+                          >
+                            <Award className="h-3.5 w-3.5 mr-1.5" />
+                            Leave Review
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </TabsContent>
         </Tabs>
@@ -215,7 +234,7 @@ export default function ReviewsPage() {
             <ReviewForm
               contract={reviewTarget}
               recipientName={reviewTarget.workerName}
-              onSuccess={() => setReviewTarget(null)}
+              onSuccess={handleReviewSuccess}
             />
           )}
         </DialogContent>

@@ -142,6 +142,9 @@ export type Conversation = {
   createdAt: string;
   lastMessageSenderId?: string;
   lastMessageSeen?: boolean;
+  /** Set once the linked contract has been accepted by both parties — locks the thread to read-only. */
+  contractId?: string;
+  locked?: boolean;
 };
 
 // ─── Message (Firestore: conversations/{id}/messages/{msgId}) ────────────────
