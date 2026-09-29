@@ -21,21 +21,21 @@ Complete missing job management features from Task 4, including job detail pages
 - [ ] Add breadcrumb navigation
 
 ### A2 — Edit Job Page (`/dashboard/my-jobs/[id]/edit`)
-- [ ] Pre-populate form with existing job data
-- [ ] Allow editing: title, type, location, salary, description, requirements
-- [ ] Prevent editing of `jobType` (keep it locked)
-- [ ] "Save" button calls `updateJobPost(jobId, changes)`
-- [ ] Success toast: "Job updated successfully!"
-- [ ] Cancel button returns to job detail without saving
-- [ ] Validation on all required fields
+- [x] Pre-populate form with existing job data
+- [x] Allow editing: title, type, location, salary, description, requirements
+- [x] Prevent editing of `jobType` (keep it locked)
+- [x] "Save" button calls `updateJobPost(jobId, changes)`
+- [x] Success toast: "Job updated successfully!"
+- [x] Cancel button returns to job detail without saving
+- [x] Validation on all required fields
 
 ### A3 — Close Job Dialog
-- [ ] Add "Close Job" button with confirmation modal
-- [ ] Modal text: "Close this job posting? It will no longer be visible to workers, but existing conversations remain active."
-- [ ] Two buttons: "Cancel" and "Confirm Close"
-- [ ] On confirm: call `updateJobPostStatus(jobId, 'closed')`
-- [ ] Success toast: "Job closed successfully"
-- [ ] Redirect back to `/dashboard/my-jobs` after closing
+- [x] Add "Close Job" button with confirmation modal
+- [x] Modal text: "Close this job posting? It will no longer be visible to workers, but existing conversations remain active."
+- [x] Two buttons: "Cancel" and "Confirm Close"
+- [x] On confirm: call `updateJobPostStatus(jobId, 'closed')`
+- [x] Success toast: "Job closed successfully"
+- [x] Redirect back to `/dashboard/my-jobs` after closing
 - [ ] Closed jobs should appear in a separate "Closed" tab on My Jobs page
 
 ---
@@ -62,9 +62,9 @@ Complete missing job management features from Task 4, including job detail pages
 - [ ] Pagination if > 10 jobs
 
 ### B2 — Firestore Helpers for Job Stats
-- [ ] Add `getJobPingCount(jobId)` — returns number of pings for a job
-- [ ] Add `getJobConversationCount(jobId)` — returns number of conversations linked to a job
-- [ ] Both should be efficiently queried (use where clauses, not full collections)
+- [x] Add `getJobPingCount(jobId)` — returns number of pings for a job
+- [x] Add `getJobConversationCount(jobId)` — returns number of conversations linked to a job
+- [x] Both should be efficiently queried (use where clauses, not full collections)
 
 ### B3 — Empty State
 - [ ] If no jobs exist: "You haven't posted any jobs yet"
@@ -75,9 +75,9 @@ Complete missing job management features from Task 4, including job detail pages
 ## Feature C: Interested Workers View
 
 ### C1 — View Interested Workers (`/dashboard/my-jobs/[id]/interested`)
-- [ ] Create new route: `/dashboard/my-jobs/[id]/interested`
-- [ ] Display list of all workers who pinged this job
-- [ ] For each worker ping, show:
+- [x] Create new route: `/dashboard/my-jobs/[id]/interested`
+- [x] Display list of all workers who pinged this job
+- [x] For each worker ping, show:
   - Worker avatar, name, title
   - Worker skills (from workerProfile)
   - Worker rating and review count
@@ -88,12 +88,12 @@ Complete missing job management features from Task 4, including job detail pages
     - "View Profile" → link to worker profile
     - "Message" → start/navigate to conversation
     - "Hire" → send contract offer (Task 6)
-- [ ] Sorting options: Most Recent, Highest Rated, Status
+- [x] Sorting options: Most Recent, Highest Rated, Status
 
 ### C2 — Link from Job Detail
-- [ ] On job detail page (`/dashboard/my-jobs/[id]`), add "View All Interested Workers" button
-- [ ] Displays count: "5 workers interested" (clickable badge)
-- [ ] Navigates to `/dashboard/my-jobs/[id]/interested`
+- [x] On job detail page (`/dashboard/my-jobs/[id]`), add "View All Interested Workers" button
+- [x] Displays count: "5 workers interested" (clickable badge)
+- [x] Navigates to `/dashboard/my-jobs/[id]/interested`
 
 ---
 

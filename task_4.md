@@ -256,10 +256,10 @@ Enable employers to build and manage real profiles, create job postings that app
 ## Feature H: Worker Profile Visibility (Basic)
 
 ### H1 — Worker Profile on Employer Side (Optional MVP)
-- [ ] When employer clicks worker name in conversation or ping list
-- [ ] Navigate to worker profile view (read-only from employer perspective)
-- [ ] Show: name, avatar, title/skills, location, rating, badge count
-- [ ] No edit capability (worker controls their own profile)
+- [x] When employer clicks worker name in conversation or ping list
+- [x] Navigate to worker profile view (read-only from employer perspective)
+- [x] Show: name, avatar, title/skills, location, rating, badge count
+- [x] No edit capability (worker controls their own profile)
 
 ---
 

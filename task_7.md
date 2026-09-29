@@ -23,9 +23,9 @@ Finish and consolidate remaining employer/job-management work from Task 4–5 an
   - Update: `src/lib/firestore.ts` — add `async function getJobConversationCount(jobId: string): Promise<number>` that queries `conversations` where `jobPostId` equals the job id and returns count.
   - Update: `src/app/dashboard/my-jobs/page.tsx` and job-card components — fetch conversation counts (batch `Promise.all`) and display on each job card.
 
-- [ ] Implement dedicated Interested Workers route
-  - Create: `src/app/dashboard/my-jobs/[id]/interested/page.tsx` — list pings for the job with sorting (Most Recent, Highest Rated, Status) and actions: View Profile (link to worker profile view), Message (start/get conversation), Hire (stub linking to Task 6).
-  - Modify: `src/app/dashboard/my-jobs/[id]/page.tsx` — add a clickable badge/button "View all interested (N)" linking to `/dashboard/my-jobs/${job.id}/interested`.
+- [x] Implement dedicated Interested Workers route
+  - Created: `src/app/dashboard/my-jobs/[id]/interested/page.tsx` — list pings for the job with sorting (Most Recent, Highest Rated, Status) and actions: View Profile (link to worker profile view), Message (start/get conversation), Hire (stub linking to Task 6).
+  - Modified: `src/app/dashboard/my-jobs/[id]/page.tsx` — clickable badge/button "View all interested (N)" linking to `/dashboard/my-jobs/${job.id}/interested`.
 
 - [ ] Close Job: confirmation modal, spinner & redirect
   - Modify: replace instant toggle with a confirmation modal (text: "Close this job posting? It will no longer be visible to workers, but existing conversations remain active.") Buttons: Cancel / Confirm Close.
@@ -86,7 +86,7 @@ Finish and consolidate remaining employer/job-management work from Task 4–5 an
   - Added retry/error UI and skeletons to `post-job`, `pings`, `message-thread`, `my-jobs`, and `workers` pages.
 
 - [ ] Add skeleton/loading for Interested Workers page
-  - Not implemented (page not created).
+  - Not implemented (page exists at `src/app/dashboard/my-jobs/[id]/interested/page.tsx`; skeleton loading state still to be added).
 
 - [ ] Add worker profile view (Employer-side) and link from pings/conversations
   - Not implemented.
