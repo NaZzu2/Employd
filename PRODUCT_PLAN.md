@@ -1,3 +1,4 @@
+- [x] Deploy the two employer/worker contract-status indexes; Firebase reports both `READY` in project `employ-d`.
 # Employ'd Product and MVP Implementation Plan
 
 > This is the canonical product/MVP plan, consolidating the former `implementation_plan.md`, `MVP_PLAN.md`, and `MVP.md`. It records current intended behavior, what is implemented in this repository, and what remains before a production MVP. The broader post-MVP backlog remains in [TASKS.md](TASKS.md), and the long-term hardening roadmap remains in [PLAN.md](PLAN.md).
@@ -79,30 +80,41 @@ Status below reflects repository code and the recorded implementation notes. A c
 - Basic job view tracking and ping/conversation counts; advanced analytics are deferred.
 - Worker pings with duplicate prevention and employer ping handling.
 - Employer-created conversations, real-time messages, read receipts, thread limits, 2,000-character message limit (client and Firestore rules), and five-second sender cooldown (client helper only).
+- Employer-created conversations, real-time messages, read receipts, per-tier thread limits (client helper only), 2,000-character message limit (client and Firestore rules), and five-second sender cooldown (client helper only).
 - Employer-created contracts, worker accept/decline, employer completion, and conversation locking on acceptance.
 - Review pages for both roles; reviews are available for active/completed contracts, shown on recipient profiles, and aggregated by the Firebase Function. Badge selection is optional per product decision.
 - `.env.local.example` with Firebase variables and optional AI/billing variables.
 - Mock subscription/billing experience. Real Stripe checkout is not an MVP requirement.
 - Employee Home route disabled by redirect; requested employee tab order is in place.
 - Review uniqueness is enforced in the Firestore write path by deterministic IDs and rules; existing random-ID review documents, if any, must be migrated before relying on uniqueness across historical data.
+- Firestore rules now restrict user documents to their owner, prevent role/tier/reputation edits, scope profile/job/ping writes, and constrain message, conversation, and contract state changes.
+- Worker job detail allows pinging but no longer exposes worker-initiated chat; ping submission stays on the job flow.
+- Emulator-backed rules tests cover role immutability, private user reads, duplicate reviews, and contract participant/state transitions.
+- Current rules tests also cover employer-only conversation creation, worker pings against active employer-owned jobs, post-acceptance chat locking, worker profile visibility, and closed-job access.
+- `eslint-config-next` is aligned to Next.js 15 and lint uses ESLint 9 flat config; lint exits successfully with legacy warnings remaining.
+- Local composite indexes include participant/status pairs for both employer and worker contract subscriptions.
 
 ### Still Required Before Calling the MVP Shipped
 
-- [ ] Resolve the current `npm run typecheck` failure in `src/app/dashboard/jobs/[id]/page.tsx`: its synchronous `params` type conflicts with the Promise-based Next.js 15 route contract. Then rerun typecheck and `npm run build`.
-- [ ] Repair and run `npm run lint`. Prior notes report `next lint` conflicts with the installed ESLint 9 configuration; status needs a fresh check.
-- [ ] Validate the updated Firestore rules in the emulator or a rules test. Emulator startup was blocked in this environment because Java is not installed; no rules were deployed.
-- [ ] Harden the rest of `firestore.rules` before public launch. In particular, `/users/{uid}` currently permits the owner to update `role`, and contract/conversation updates are not restricted to safe fields or valid role-specific state transitions.
+- [x] `npm run typecheck` and `npm run build` pass after the route and employee-flow changes.
+- [x] `npm run lint` exits successfully with no errors; legacy warnings remain and should be reduced over time.
+- [x] Run 10 emulator-backed Firestore rules tests in the Standard Edition emulator.
+- [ ] Review remaining data minimization and abuse controls before public launch; `users/{uid}` is now owner-only, while public profile collections remain visible to authenticated users by design.
+- [ ] Enforce per-tier thread quotas and the five-second message cooldown with trusted server-side logic; both are currently bypassable client-side controls.
 - [ ] Run the full two-account workflow against the target Firebase project: signup, profiles, job post, worker ping, employer chat, message replies/read receipts, contract creation/acceptance, chat lock, both reviews, and updated aggregates.
 - [ ] Verify the employee flow on a real phone: no horizontal overflow, usable keyboard/forms, bottom navigation unobscured, and comfortable tap targets.
 - [ ] Confirm target-project Firestore rules are deployed and the `aggregate_review` Cloud Function is deployed and firing. Repository presence alone does not prove deployment.
-- [ ] Confirm production environment variables and hosting configuration, then run a production signup-to-review walkthrough.
-- [ ] If the target database already contains reviews with random document IDs, migrate them to `{contractId}_{reviewerUid}` before enabling the new create rule, resolving any existing duplicates first.
-- [ ] Confirm the configured Firestore indexes cover the compound queries used by the app.
-- [ ] Verify the changed TypeScript files remain error-free after resolving the unrelated route typing failure; editor diagnostics currently report no errors in those files.
+- [ ] Inspect historical review IDs and duplicates, then migrate any random-ID records before deploying the deterministic-ID rule. This read-only check was blocked by invalid/expired OAuth credentials; no production data was read or changed.
+- [ ] Deploy the updated `firestore.rules`, the `aggregate_review` Cloud Function, and the two contract-status indexes. CLI inspection found no deployed Functions, and only three remote composite indexes (five are in local config) in project `employ-d`.
+- [ ] Deploy the updated `firestore.rules` after review migration inspection. The rules were emulator-tested but not deployed.
+- [ ] Deploy the `aggregate_review` Cloud Function. CLI inspection found none deployed; deployment was blocked because project `employ-d` must be upgraded to Blaze to enable Artifact Registry/Cloud Build.
+- [x] Deploy the two employer/worker contract-status indexes. Deployment succeeded; Firebase currently reports both as `CREATING`, so confirm they reach `READY`.
+- [ ] Inspect historical review IDs and duplicates, then migrate any random-ID records before deploying the deterministic-ID rule. This read-only check was blocked by invalid/expired service-account credentials; no production data was read or changed.
+- [ ] Verify production environment variables and hosting configuration, then run a production signup-to-review walkthrough.
 
 ### Deferred / Not MVP Blockers
 
-- Automated unit/integration/rules tests and CI pipeline.
+- Broader app unit/integration tests and CI pipeline; focused Firestore rules emulator tests are now included.
 - Real Stripe billing and subscription purchase flow.
 - PWA installability, offline operation, and service worker.
 - Server-enforced badge count limits; current plan limit is client-enforced. Badge presence itself is optional.

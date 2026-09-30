@@ -83,9 +83,8 @@ export default function WorkerJobsPage() {
     });
   }, [jobs, search, userDoc, filterByRange, radius]);
 
-  const handlePingSent = (conversationId: string) => {
-    toast({ title: 'Conversation created', description: 'We created a chat with the employer.' });
-    router.push(`/worker/messages/${conversationId}`);
+  const handlePingSent = () => {
+    toast({ title: 'Ping sent', description: 'The employer can start a conversation if interested.' });
   };
 
   return (

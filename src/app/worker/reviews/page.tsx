@@ -34,6 +34,7 @@ import { timeAgo } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import type { Contract, Review, BadgeType } from '@/lib/types';
+import { summarizeReviews } from '@/lib/review-summary';
 
 export default function WorkerReviewsPage() {
   const { userDoc } = useAuth();
@@ -108,9 +109,7 @@ export default function WorkerReviewsPage() {
     }
   };
 
-  const avgRating = userDoc?.averageRating ?? 0;
-  const reviewCount = userDoc?.reviewCount ?? received.length;
-  const badgeCounts = userDoc?.badgeCounts;
+  const { averageRating: avgRating, reviewCount, badgeCounts } = summarizeReviews(received);
 
   if (loading) {
     return (

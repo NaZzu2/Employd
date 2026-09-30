@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import type { EmployerProfile } from '@/lib/types';
 import { THREAD_LIMITS } from '@/lib/types';
+import { BadgeDisplay } from '@/components/shared/badge-display';
 
 const INDUSTRY_OPTIONS = ['Construction', 'Manufacturing', 'Services', 'IT', 'Other'];
 
@@ -185,6 +186,7 @@ export default function ProfilePage() {
                                                     <Button variant="ghost" size="sm" className="ml-2">Upgrade subscription</Button>
                                                 </Link>
                                         </div>
+                                            <BadgeDisplay badgeCounts={profile.badgeCounts} compact />
 
                     <Button onClick={handleSave} disabled={saving}>
                         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

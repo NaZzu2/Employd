@@ -8,8 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
-export default function JobDetailPage({ params }: { params: { id: string } }) {
-  const job = jobs.find((j) => j.id === params.id);
+export default async function JobDetailPage({
+    params,
+}: {
+    params: Promise<{ id: string }>;
+}) {
+    const { id } = await params;
+    const job = jobs.find((j) => j.id === id);
 
   if (!job) {
     notFound();

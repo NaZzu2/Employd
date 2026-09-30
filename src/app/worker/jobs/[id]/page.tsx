@@ -1,31 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, MessageCircle, Clock, MapPin, Briefcase, Users } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, Briefcase, Users } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/auth-context';
-import { getJobPost } from '@/lib/firestore';
+import { getJobPost, logJobView } from '@/lib/firestore';
 import { FINNISH_JOB_POSTS } from '@/lib/data';
 import { hasValidConfig } from '@/lib/firebase';
 import { PingDialog } from '@/components/worker/ping-dialog';
-import { getUserDoc, getOrCreateConversation, logJobView } from '@/lib/firestore';
-import { useToast } from '@/hooks/use-toast';
 import type { JobPost } from '@/lib/types';
 
 export default function JobDetailPage() {
   const { userDoc } = useAuth();
   const router = useRouter();
   const params = useParams();
-  const { toast } = useToast();
   const jobId = typeof params.id === 'string' ? params.id : '';
 
   const [job, setJob] = useState<JobPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPingDialog, setShowPingDialog] = useState(false);
-  const [messagingLoading, setMessagingLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -46,12 +42,13 @@ export default function JobDetailPage() {
   useEffect(() => {
     if (!job || !job.id) return;
     if (!hasValidConfig) return;
+    if (!userDoc?.uid) return;
     if (typeof window === 'undefined') return;
     try {
       const key = `jobViewLogged:${job.id}`;
       if (!sessionStorage.getItem(key)) {
         // Fire-and-forget
-        logJobView(job.id, userDoc?.uid).catch((e) => console.error('logJobView error', e));
+        logJobView(job.id, userDoc.uid).catch((e) => console.error('logJobView error', e));
         sessionStorage.setItem(key, new Date().toISOString());
       }
     } catch (e) {
@@ -59,35 +56,6 @@ export default function JobDetailPage() {
       console.error('session storage error for job view logging', e);
     }
   }, [job?.id, userDoc?.uid]);
-
-  const messageEmployer = async () => {
-    if (!userDoc || !job) return;
-    setMessagingLoading(true);
-    try {
-      if (!hasValidConfig) {
-        const convId = `mock-${job.id}`;
-        toast({ title: 'Conversation started', description: `Conversation started with ${job.companyName}.` });
-        router.push(`/worker/messages/${convId}`);
-        return;
-      }
-      const employerDoc = await getUserDoc(job.employerId);
-      if (!employerDoc) throw new Error('Employer profile not found');
-      const { conversationId } = await getOrCreateConversation(
-        employerDoc,
-        userDoc.uid,
-        userDoc.displayName,
-        job.id,
-        job.title,
-      );
-      toast({ title: 'Conversation started', description: `Conversation started with ${job.companyName}.` });
-      router.push(`/worker/messages/${conversationId}`);
-    } catch (error: any) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Unable to start conversation', description: error?.message ?? 'Try again later.' });
-    } finally {
-      setMessagingLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -145,15 +113,9 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button className="flex-1" onClick={messageEmployer} disabled={messagingLoading}>
-            <MessageCircle className="h-4 w-4 mr-2" />
-            {messagingLoading ? 'Starting conversation...' : 'Message employer'}
-          </Button>
-          <Button variant="secondary" className="flex-1" onClick={() => setShowPingDialog(true)}>
-            Send ping
-          </Button>
-        </div>
+        <Button className="w-full" onClick={() => setShowPingDialog(true)}>
+          Send ping
+        </Button>
 
         {showPingDialog && (
           <PingDialog

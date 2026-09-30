@@ -39,7 +39,7 @@ interface PingDialogProps {
   job: JobPost;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onPingSent?: (conversationId: string) => void;
+  onPingSent?: () => void;
 }
 
 export function PingDialog({ job, open, onOpenChange, onPingSent }: PingDialogProps) {
@@ -81,10 +81,7 @@ export function PingDialog({ job, open, onOpenChange, onPingSent }: PingDialogPr
       });
       form.reset();
       onOpenChange(false);
-      // Notify parent — no conversationId yet; employer creates it when they reply
-      if (onPingSent) {
-        onPingSent('');
-      }
+      onPingSent?.();
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Failed to send ping', description: err.message });
     } finally {

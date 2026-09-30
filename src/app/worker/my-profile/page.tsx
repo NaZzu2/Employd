@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MapPin, Briefcase, Award, Settings, CheckCircle2 } from 'lucide-react';
+import { MapPin, Briefcase, Award, Settings, CheckCircle2, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,13 +19,12 @@ import { getWorkerProfile } from '@/lib/firestore';
 import { StarRatingDisplay } from '@/components/shared/star-rating';
 import { BadgeDisplay } from '@/components/shared/badge-display';
 import { useAuth } from '@/lib/auth-context';
-import { THREAD_LIMITS } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { EMPTY_BADGE_COUNTS } from '@/lib/badge-config';
 import type { WorkerProfile } from '@/lib/types';
 
 export default function WorkerProfilePage() {
-  const { userDoc } = useAuth();
+  const { userDoc, signOut } = useAuth();
+  const router = useRouter();
   const [profile, setProfile] = useState<WorkerProfile | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,6 +65,11 @@ export default function WorkerProfilePage() {
     badgeCounts: { punctual: 0, reliable: 0, quality: 0, professional: 0, goes_above: 0 },
     updatedAt: new Date().toISOString(),
   } as WorkerProfile;
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace('/');
+  };
 
   return (
     <>
@@ -117,15 +122,26 @@ export default function WorkerProfilePage() {
             size="md"
           />
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => setEditOpen(true)}
-          >
-            <Settings className="h-4 w-4" />
-            Edit Profile
-          </Button>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setEditOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
+              Edit Profile
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-2"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         <Separator />

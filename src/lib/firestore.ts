@@ -35,6 +35,38 @@ import type {
 } from '@/lib/types';
 import { shouldResetMonthlyThreads, canStartThread } from '@/lib/utils';
 import { THREAD_LIMITS, BADGE_LIMITS, MAX_MESSAGE_LENGTH, MESSAGE_MIN_INTERVAL_MS } from '@/lib/types';
+import { summarizeReviews } from '@/lib/review-summary';
+
+async function withReviewSummaries<T extends { uid: string }>(profiles: T[]): Promise<T[]> {
+  const reviewsByUser = new Map(profiles.map((profile) => [profile.uid, [] as Review[]]));
+  const userIds = [...reviewsByUser.keys()];
+  const batches: string[][] = [];
+
+  for (let index = 0; index < userIds.length; index += 30) {
+    batches.push(userIds.slice(index, index + 30));
+  }
+
+  const snapshots = await Promise.all(batches.map((batch) =>
+    getDocs(query(collection(db, 'reviews'), where('toUid', 'in', batch))),
+  ));
+
+  for (const snapshot of snapshots) {
+    for (const reviewDoc of snapshot.docs) {
+      const review = { id: reviewDoc.id, ...reviewDoc.data() } as Review;
+      reviewsByUser.get(review.toUid)?.push(review);
+    }
+  }
+
+  return profiles.map((profile) => ({
+    ...profile,
+    ...summarizeReviews(reviewsByUser.get(profile.uid) ?? []),
+  }));
+}
+
+async function withReviewSummary<T extends { uid: string }>(profile: T): Promise<T> {
+  const reviews = await getReviewsForUser(profile.uid);
+  return { ...profile, ...summarizeReviews(reviews) };
+}
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
@@ -58,12 +90,12 @@ export async function updateSearchRadius(uid: string, radiusKm: number) {
 
 export async function getWorkerProfile(uid: string): Promise<WorkerProfile | null> {
   const snap = await getDoc(doc(db, 'workerProfiles', uid));
-  return snap.exists() ? (snap.data() as WorkerProfile) : null;
+  return snap.exists() ? withReviewSummary(snap.data() as WorkerProfile) : null;
 }
 
 export async function getAllWorkerProfiles(): Promise<WorkerProfile[]> {
   const snap = await getDocs(collection(db, 'workerProfiles'));
-  const profiles = snap.docs.map((d) => d.data() as WorkerProfile);
+  const profiles = await withReviewSummaries(snap.docs.map((d) => d.data() as WorkerProfile));
   return profiles.sort((a, b) => {
     if (a.isLookingForWork !== b.isLookingForWork) return a.isLookingForWork ? -1 : 1;
     return (b.averageRating ?? 0) - (a.averageRating ?? 0);
@@ -74,7 +106,7 @@ export async function getWorkersLookingForWork(): Promise<WorkerProfile[]> {
   const snap = await getDocs(
     query(collection(db, 'workerProfiles'), where('isLookingForWork', '==', true)),
   );
-  const profiles = snap.docs.map((d) => d.data() as WorkerProfile);
+  const profiles = await withReviewSummaries(snap.docs.map((d) => d.data() as WorkerProfile));
   return profiles.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
 }
 
@@ -106,7 +138,7 @@ export async function createEmployerProfile(uid: string, profile: EmployerProfil
 
 export async function getEmployerProfile(uid: string): Promise<EmployerProfile | null> {
   const snap = await getDoc(doc(db, 'employerProfiles', uid));
-  return snap.exists() ? (snap.data() as EmployerProfile) : null;
+  return snap.exists() ? withReviewSummary(snap.data() as EmployerProfile) : null;
 }
 
 export async function updateEmployerProfile(

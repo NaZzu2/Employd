@@ -2,34 +2,163 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function hasRole(role) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    function userHasRole(uid, role) {
+      return exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/users/$(uid)).data.role == role;
+    }
+
+    function validBadgeCounts(counts) {
+      return counts is map
+        && counts.keys().hasOnly(['punctual', 'reliable', 'quality', 'professional', 'goes_above'])
+        && counts.keys().hasAll(['punctual', 'reliable', 'quality', 'professional', 'goes_above'])
+        && counts.punctual is int && counts.punctual >= 0
+        && counts.reliable is int && counts.reliable >= 0
+        && counts.quality is int && counts.quality >= 0
+        && counts.professional is int && counts.professional >= 0
+        && counts.goes_above is int && counts.goes_above >= 0;
+    }
+
+    function hasZeroReputation(data) {
+      return data.averageRating == 0
+        && data.reviewCount == 0
+        && validBadgeCounts(data.badgeCounts)
+        && data.badgeCounts.punctual == 0
+        && data.badgeCounts.reliable == 0
+        && data.badgeCounts.quality == 0
+        && data.badgeCounts.professional == 0
+        && data.badgeCounts.goes_above == 0;
+    }
+
     // ── Users ───────────────────────────────────────────────────────────────
     match /users/{uid} {
-      allow read: if request.auth != null;
-      allow create: if request.auth.uid == uid;
-      allow update: if request.auth.uid == uid;
+      allow read: if owns(uid);
+      allow create: if owns(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.role in ['employer', 'worker']
+        && request.resource.data.subscriptionTier == 'free'
+        && request.resource.data.averageRating == 0
+        && request.resource.data.reviewCount == 0
+        && validBadgeCounts(request.resource.data.badgeCounts)
+        && request.resource.data.badgeCounts.punctual == 0
+        && request.resource.data.badgeCounts.reliable == 0
+        && request.resource.data.badgeCounts.quality == 0
+        && request.resource.data.badgeCounts.professional == 0
+        && request.resource.data.badgeCounts.goes_above == 0;
+      allow update: if owns(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'location', 'searchRadiusKm', 'monthlyThreadsStarted', 'monthlyThreadsResetAt'
+        ])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['monthlyThreadsResetAt'])
+          || request.resource.data.monthlyThreadsResetAt is string)
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['searchRadiusKm'])
+          || (request.resource.data.searchRadiusKm is int
+            && request.resource.data.searchRadiusKm >= 0
+            && request.resource.data.searchRadiusKm <= 500))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['monthlyThreadsStarted'])
+          || (resource.data.role == 'employer'
+            && request.resource.data.monthlyThreadsStarted is int
+            && request.resource.data.monthlyThreadsStarted >= 0))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['location'])
+          || (request.resource.data.location is map
+            && request.resource.data.location.lat is number
+            && request.resource.data.location.lng is number
+            && request.resource.data.location.address is string));
+      allow delete: if false;
     }
 
     // ── Worker Profiles ─────────────────────────────────────────────────────
     match /workerProfiles/{uid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == uid;
+      allow read: if signedIn();
+      allow create: if owns(uid)
+        && hasRole('worker')
+        && request.resource.data.uid == uid
+        && hasZeroReputation(request.resource.data);
+      allow update: if owns(uid)
+        && hasRole('worker')
+        && resource.data.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName', 'avatarUrl', 'title', 'location', 'summary', 'skills',
+          'isLookingForWork', 'experience', 'education', 'updatedAt'
+        ]);
+      allow delete: if false;
     }
 
     // ── Employer Profiles ───────────────────────────────────────────────────
     match /employerProfiles/{uid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == uid;
+      allow read: if signedIn();
+      allow create: if owns(uid)
+        && hasRole('employer')
+        && request.resource.data.uid == uid
+        && hasZeroReputation(request.resource.data);
+      allow update: if owns(uid)
+        && hasRole('employer')
+        && resource.data.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName', 'avatarUrl', 'companyName', 'industry', 'location',
+          'description', 'website', 'updatedAt'
+        ]);
+      allow delete: if false;
     }
 
     // ── Job Posts ───────────────────────────────────────────────────────────
     match /jobPosts/{jobId} {
-      // All authenticated users can read active job posts
-      allow read: if request.auth != null;
+      // Authenticated users can browse active jobs; employers can also read their closed posts.
+      allow read: if signedIn()
+        && (resource.data.status == 'active' || resource.data.employerId == request.auth.uid);
       // Only the employer who created it can write/update
       allow create: if request.auth != null
-        && request.resource.data.employerId == request.auth.uid;
-      allow update, delete: if request.auth != null
-        && resource.data.employerId == request.auth.uid;
+        && hasRole('employer')
+        && request.resource.data.employerId == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'employerId', 'employerName', 'companyName', 'title', 'location', 'type',
+          'salary', 'description', 'requirements', 'status', 'postedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'employerId', 'employerName', 'companyName', 'title', 'location', 'type',
+          'salary', 'description', 'requirements', 'status', 'imageUrl', 'postedAt'
+        ])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 10000
+        && request.resource.data.requirements is list
+        && request.resource.data.requirements.size() <= 50
+        && request.resource.data.type in ['Full-time', 'Part-time', 'Contract']
+        && request.resource.data.status == 'active'
+        && request.resource.data.postedAt is string
+        && request.resource.data.location is map
+        && request.resource.data.location.address is string
+        && request.resource.data.location.lat is number
+        && request.resource.data.location.lng is number;
+      allow update: if request.auth != null
+        && hasRole('employer')
+        && resource.data.employerId == request.auth.uid
+        && request.resource.data.employerId == resource.data.employerId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'employerName', 'companyName', 'title', 'location', 'type', 'salary',
+          'description', 'requirements', 'status', 'imageUrl'
+        ])
+        && request.resource.data.status in ['active', 'closed'];
+      allow delete: if false;
     }
 
     // ── Pings ───────────────────────────────────────────────────────────────
@@ -40,10 +169,31 @@ service cloud.firestore {
             || resource.data.employerId == request.auth.uid);
       // Workers create pings
       allow create: if request.auth != null
-        && request.resource.data.workerId == request.auth.uid;
+        && hasRole('worker')
+        && request.resource.data.workerId == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'workerId', 'workerName', 'workerTitle', 'jobPostId', 'jobTitle',
+          'employerId', 'message', 'status', 'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'workerId', 'workerName', 'workerTitle', 'workerAvatarUrl', 'jobPostId',
+          'jobTitle', 'employerId', 'message', 'status', 'createdAt'
+        ])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.message is string
+        && request.resource.data.message.size() >= 10
+        && request.resource.data.message.size() <= 300
+        && request.resource.data.createdAt is string
+        && exists(/databases/$(database)/documents/jobPosts/$(request.resource.data.jobPostId))
+        && get(/databases/$(database)/documents/jobPosts/$(request.resource.data.jobPostId)).data.status == 'active'
+        && get(/databases/$(database)/documents/jobPosts/$(request.resource.data.jobPostId)).data.employerId == request.resource.data.employerId;
       // Employer can update status (accept/decline)
       allow update: if request.auth != null
-        && resource.data.employerId == request.auth.uid;
+        && hasRole('employer')
+        && resource.data.employerId == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['accepted', 'declined']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
     }
 
     // ── Conversations ────────────────────────────────────────────────────────
@@ -55,12 +205,55 @@ service cloud.firestore {
       // Only the system (via server SDK / employer action) updates lastMessage etc.
       allow update: if request.auth != null
         && (resource.data.employerId == request.auth.uid
-            || resource.data.workerId == request.auth.uid);
+            || resource.data.workerId == request.auth.uid)
+        && (
+          (!resource.data.get('locked', false)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'lastMessage', 'lastMessageAt', 'lastMessageSenderId', 'lastMessageSeen'
+            ])
+            && request.resource.data.lastMessageSenderId == request.auth.uid
+            && request.resource.data.lastMessage is string
+            && request.resource.data.lastMessage.size() > 0
+            && request.resource.data.lastMessage.size() <= 2000
+            && request.resource.data.lastMessageAt is string
+            && request.resource.data.lastMessageSeen == false)
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMessageSeen'])
+            && resource.data.lastMessageSenderId != request.auth.uid
+            && request.resource.data.lastMessageSeen == true)
+          || (resource.data.workerId == request.auth.uid
+            && !resource.data.get('locked', false)
+            && request.resource.data.locked == true
+            && request.resource.data.contractId is string
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked', 'contractId'])
+            && exists(/databases/$(database)/documents/contracts/$(request.resource.data.contractId))
+            && get(/databases/$(database)/documents/contracts/$(request.resource.data.contractId)).data.status == 'active'
+            && get(/databases/$(database)/documents/contracts/$(request.resource.data.contractId)).data.workerId == resource.data.workerId
+            && get(/databases/$(database)/documents/contracts/$(request.resource.data.contractId)).data.employerId == resource.data.employerId)
+        );
       // Only employers may START a new conversation (workers should ping jobs instead)
       allow create: if request.auth != null
+        && hasRole('employer')
         && request.resource.data.employerId == request.auth.uid
         // require minimal fields on create
-        && request.resource.data.keys().hasAll(['employerId', 'workerId', 'employerName', 'workerName', 'createdAt']);
+        && request.resource.data.workerId is string
+        && request.resource.data.workerId != request.auth.uid
+        && userHasRole(request.resource.data.workerId, 'worker')
+        && request.resource.data.keys().hasAll([
+          'employerId', 'workerId', 'employerName', 'workerName', 'lastMessage', 'lastMessageAt', 'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'employerId', 'workerId', 'employerName', 'workerName', 'jobPostId', 'jobTitle',
+          'lastMessage', 'lastMessageAt', 'createdAt'
+        ])
+        && request.resource.data.employerName is string
+        && request.resource.data.employerName.size() > 0
+        && request.resource.data.employerName.size() <= 120
+        && request.resource.data.workerName is string
+        && request.resource.data.workerName.size() > 0
+        && request.resource.data.workerName.size() <= 120
+        && request.resource.data.lastMessage == ''
+        && request.resource.data.lastMessageAt is string
+        && request.resource.data.createdAt is string;
       // Conversations cannot be deleted
       allow delete: if false;
 
@@ -78,14 +271,21 @@ service cloud.firestore {
           && (get(/databases/$(database)/documents/conversations/$(convId)).data.employerId == request.auth.uid
               || get(/databases/$(database)/documents/conversations/$(convId)).data.workerId == request.auth.uid)
           && get(/databases/$(database)/documents/conversations/$(convId)).data.get('locked', false) != true
+          && request.resource.data.keys().hasOnly(['senderId', 'senderRole', 'senderName', 'text', 'createdAt'])
           && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.senderRole == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+          && request.resource.data.senderName is string
+          && request.resource.data.senderName.size() > 0
+          && request.resource.data.senderName.size() <= 120
           && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 2000;
+          && request.resource.data.text.size() <= 2000
+          && request.resource.data.createdAt is string;
 
         // Either party can update ONLY the seenAt field (read receipts).
         // The updater must NOT be the original sender (you can't mark your own as seen).
         allow update: if request.auth != null
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seenAt'])
+          && request.resource.data.seenAt is string
           && resource.data.senderId != request.auth.uid
           && (get(/databases/$(database)/documents/conversations/$(convId)).data.employerId == request.auth.uid
               || get(/databases/$(database)/documents/conversations/$(convId)).data.workerId == request.auth.uid);
@@ -99,11 +299,54 @@ service cloud.firestore {
             || resource.data.workerId == request.auth.uid);
       // Employer creates contract
       allow create: if request.auth != null
-        && request.resource.data.employerId == request.auth.uid;
-      // Worker can update status (accept/decline); employer can mark complete
+        && hasRole('employer')
+        && request.resource.data.employerId == request.auth.uid
+        && request.resource.data.workerId is string
+        && userHasRole(request.resource.data.workerId, 'worker')
+        && request.resource.data.status == 'pending_worker_acceptance'
+        && request.resource.data.keys().hasAll([
+          'employerId', 'employerName', 'workerId', 'workerName', 'jobPostId',
+          'jobTitle', 'status', 'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'employerId', 'employerName', 'workerId', 'workerName', 'jobPostId',
+          'jobTitle', 'status', 'createdAt'
+        ])
+        && request.resource.data.employerName is string
+        && request.resource.data.workerName is string
+        && request.resource.data.jobPostId is string
+        && request.resource.data.jobTitle is string
+        && request.resource.data.createdAt is string;
+      // Worker may accept or decline a pending offer; employer may complete an active contract.
       allow update: if request.auth != null
-        && (resource.data.workerId == request.auth.uid
-            || resource.data.employerId == request.auth.uid);
+        && (
+          (resource.data.workerId == request.auth.uid
+            && hasRole('worker')
+            && resource.data.status == 'pending_worker_acceptance'
+            && request.resource.data.status in ['active', 'declined']
+            && request.resource.data.workerRespondedAt is string
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'workerRespondedAt']))
+          || (resource.data.employerId == request.auth.uid
+            && hasRole('employer')
+            && resource.data.status == 'active'
+            && request.resource.data.status == 'completed'
+            && request.resource.data.completedAt is string
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt']))
+        );
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null
+          && (get(/databases/$(database)/documents/contracts/$(contractId)).data.employerId == request.auth.uid
+            || get(/databases/$(database)/documents/contracts/$(contractId)).data.workerId == request.auth.uid);
+        allow create: if request.auth != null
+          && hasRole('worker')
+          && get(/databases/$(database)/documents/contracts/$(contractId)).data.workerId == request.auth.uid
+          && request.resource.data.fromUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 500
+          && request.resource.data.createdAt is string
+          && request.resource.data.keys().hasOnly(['fromUid', 'text', 'createdAt']);
+      }
     }
 
     // ── Reviews ──────────────────────────────────────────────────────────────
@@ -113,17 +356,43 @@ service cloud.firestore {
         && request.resource.data.fromUid == request.auth.uid
         && request.resource.data.toUid != request.auth.uid
         && request.resource.data.keys().hasAll(['fromUid', 'toUid', 'fromRole', 'stars', 'contractId'])
+        && request.resource.data.keys().hasOnly([
+          'fromUid', 'fromName', 'fromRole', 'toUid', 'stars', 'badge', 'badges', 'comment', 'contractId', 'createdAt'
+        ])
         && request.resource.data.fromUid is string
         && request.resource.data.contractId is string
         && reviewId == request.resource.data.contractId + '_' + request.auth.uid
+        && request.resource.data.fromRole == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        && request.resource.data.fromName is string
+        && request.resource.data.fromName.size() <= 120
         && request.resource.data.stars >= 1
         && request.resource.data.stars <= 5
+        && (!('badge' in request.resource.data)
+          || request.resource.data.badge in ['punctual', 'reliable', 'quality', 'professional', 'goes_above'])
+        && (!('badges' in request.resource.data)
+          || (request.resource.data.badges is list
+            && request.resource.data.badges.size() <= 5
+            && request.resource.data.badges.toSet().hasOnly(['punctual', 'reliable', 'quality', 'professional', 'goes_above'])))
+        && (!('comment' in request.resource.data)
+          || (request.resource.data.comment is string && request.resource.data.comment.size() <= 500))
+        && request.resource.data.createdAt is string
         && exists(/databases/$(database)/documents/contracts/$(request.resource.data.contractId))
         && get(/databases/$(database)/documents/contracts/$(request.resource.data.contractId)).data.status in ['active', 'completed']
         && ((get(/databases/$(database)/documents/contracts/$(request.resource.data.contractId)).data.employerId == request.auth.uid
           && get(/databases/$(database)/documents/contracts/$(request.resource.data.contractId)).data.workerId == request.resource.data.toUid)
           || (get(/databases/$(database)/documents/contracts/$(request.resource.data.contractId)).data.workerId == request.auth.uid
           && get(/databases/$(database)/documents/contracts/$(request.resource.data.contractId)).data.employerId == request.resource.data.toUid));
+    }
+
+    match /jobViews/{viewId} {
+      allow create: if request.auth != null
+        && request.resource.data.jobId is string
+        && request.resource.data.workerId == request.auth.uid
+        && request.resource.data.viewedAt is string
+        && exists(/databases/$(database)/documents/jobPosts/$(request.resource.data.jobId));
+      allow read: if request.auth != null
+        && exists(/databases/$(database)/documents/jobPosts/$(resource.data.jobId))
+        && get(/databases/$(database)/documents/jobPosts/$(resource.data.jobId)).data.employerId == request.auth.uid;
     }
   }
 }

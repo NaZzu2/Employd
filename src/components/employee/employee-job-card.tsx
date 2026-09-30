@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 
 interface EmployeeJobCardProps {
   job: JobPost;
-  onPingSent?: (conversationId: string) => void;
+  onPingSent?: () => void;
 }
 
 const typeColors: Record<string, string> = {

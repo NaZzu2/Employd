@@ -25,6 +25,7 @@ import {
 } from '@/lib/firestore';
 import type { Contract, Review, BadgeType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { summarizeReviews } from '@/lib/review-summary';
 
 export default function ReviewsPage() {
   const { userDoc, loading: authLoading } = useAuth();
@@ -94,9 +95,7 @@ export default function ReviewsPage() {
     }
   };
 
-  const avgRating = userDoc?.averageRating ?? 0;
-  const reviewCount = userDoc?.reviewCount ?? received.length;
-  const badgeCounts = userDoc?.badgeCounts;
+  const { averageRating: avgRating, reviewCount, badgeCounts } = summarizeReviews(received);
 
   if (authLoading || loading) {
     return (

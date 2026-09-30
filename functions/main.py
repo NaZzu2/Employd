@@ -7,7 +7,7 @@ from firebase_admin import firestore, initialize_app
 # traffic spikes by instead downgrading performance. This limit is a per-function
 # limit. You can override the limit for each function using the max_instances
 # parameter in the decorator, e.g. @https_fn.on_request(max_instances=5).
-set_global_options(max_instances=10)
+set_global_options(max_instances=10, region="europe-north1")
 
 initialize_app()
 

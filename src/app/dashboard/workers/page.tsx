@@ -302,7 +302,7 @@ export default function WorkersPage() {
           <Users className="h-10 w-10 opacity-30" />
           <p className="font-medium">No workers match your filters</p>
           <p className="text-sm text-center max-w-xs">
-            Try widening the radius, removing skill filters, or turning off the "available only" toggle.
+            Try widening the radius, removing skill filters, or turning off the &quot;available only&quot; toggle.
           </p>
           <Button
             variant="outline"
