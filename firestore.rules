@@ -113,6 +113,9 @@ service cloud.firestore {
         && request.resource.data.fromUid == request.auth.uid
         && request.resource.data.toUid != request.auth.uid
         && request.resource.data.keys().hasAll(['fromUid', 'toUid', 'fromRole', 'stars', 'contractId'])
+        && request.resource.data.fromUid is string
+        && request.resource.data.contractId is string
+        && reviewId == request.resource.data.contractId + '_' + request.auth.uid
         && request.resource.data.stars >= 1
         && request.resource.data.stars <= 5
         && exists(/databases/$(database)/documents/contracts/$(request.resource.data.contractId))

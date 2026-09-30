@@ -60,4 +60,4 @@ Employ'd is a two-sided job marketplace connecting **employers** (desktop/browse
 - Automated tests/CI — acceptable short-term trade-off for a pre-validation MVP; tracked as follow-up work, not a hidden gap.
 - Server-side badge-limit enforcement — client-side check is sufficient at MVP trust levels; not a security hole for reviews (which still require a real contract).
 
-See [MVP.md](MVP.md) for the exact remaining checklist to close before this MVP is considered fully shippable, and [TASKS.md](TASKS.md) for the full backlog beyond MVP scope.
+See [PRODUCT_PLAN.md](PRODUCT_PLAN.md) for the authoritative requirements, implementation status, and remaining MVP checklist, and [TASKS.md](TASKS.md) for the broader backlog beyond MVP scope.

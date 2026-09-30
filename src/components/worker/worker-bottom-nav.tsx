@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, MessageSquare, User, FileText } from 'lucide-react';
+import { Briefcase, MessageSquare, FileText, Star, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const tabs = [
-  { href: '/worker', icon: Home, label: 'Home', exact: true },
   { href: '/worker/jobs', icon: Briefcase, label: 'Jobs' },
-  { href: '/worker/contracts', icon: FileText, label: 'Contracts' },
   { href: '/worker/messages', icon: MessageSquare, label: 'Messages' },
+  { href: '/worker/contracts', icon: FileText, label: 'Contracts' },
+  { href: '/worker/reviews', icon: Star, label: 'Reviews' },
   { href: '/worker/my-profile', icon: User, label: 'Profile' },
 ];
 
@@ -19,8 +19,8 @@ export function WorkerBottomNav() {
   return (
     <nav className="border-t bg-background/95 backdrop-blur-md">
       <div className="flex items-stretch justify-around h-16">
-        {tabs.map(({ href, icon: Icon, label, exact }) => {
-          const active = exact ? pathname === href : pathname.startsWith(href);
+        {tabs.map(({ href, icon: Icon, label }) => {
+          const active = pathname === href || pathname.startsWith(href + '/');
           return (
             <Link
               key={href}

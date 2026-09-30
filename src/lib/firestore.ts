@@ -735,10 +735,11 @@ export async function submitReview(review: Omit<Review, 'id' | 'createdAt'>): Pr
 
   // Recipient aggregates are protected from client writes and updated by the
   // Firebase Admin review trigger after this document is created.
-  await addDoc(collection(db, 'reviews'), {
-    ...review,
-    createdAt: new Date().toISOString(),
-  });
+  const reviewData = Object.fromEntries(
+    Object.entries({ ...review, createdAt: new Date().toISOString() })
+      .filter(([, value]) => value !== undefined),
+  );
+  await setDoc(doc(db, 'reviews', `${review.contractId}_${review.fromUid}`), reviewData);
 }
 
 /** Returns how many badges a user has already awarded in reviews for a given contract */

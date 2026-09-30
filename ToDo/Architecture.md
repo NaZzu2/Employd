@@ -17,7 +17,7 @@
     - `contracts/{id}` — employerId, workerId, jobPostId, status, createdAt
     - `reviews/{id}` — fromUid, toUid, stars, badge (one), comment, contractId, createdAt
     - Optional `jobViews` for analytics (planned)
-  - Example types are documented in [`src/lib/types.ts`](src/lib/types.ts) and `implementation_plan.md`.
+  - Example types are documented in [`src/lib/types.ts`](src/lib/types.ts) and [`PRODUCT_PLAN.md`](../PRODUCT_PLAN.md).
 - Data format
   - Documents use fields (strings, numbers, arrays, ISO date strings). Timestamps are often ISO strings (convert to Firestore Timestamps recommended for analytics).
   - Badge counts are aggregated on user docs: `badgeCounts: { punctual: number, reliable: number, ... }`.
@@ -35,6 +35,6 @@
   - Define and deploy required composite indexes (see README note on indexes).
 
 References:
-- Types & plan: [src/lib/types.ts](src/lib/types.ts), [implementation_plan.md](implementation_plan.md)
+- Types & plan: [src/lib/types.ts](src/lib/types.ts), [PRODUCT_PLAN.md](../PRODUCT_PLAN.md)
 - Firestore helper usage: [src/lib/firestore.ts](src/lib/firestore.ts)
 - Docs: [README.md](README.md), [docs/FIREBASE_SETUP.md](docs/FIREBASE_SETUP.md)

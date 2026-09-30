@@ -1,6 +1,6 @@
 # Employ'd — Consolidated Open Tasks
 
-> Collects every unimplemented / partially-implemented checklist item still open across [task.md](task.md), [task_2.md](task_2.md), [task_3.md](task_3.md), [task_4.md](task_4.md), [task_5.md](task_5.md), [task_6.md](task_6.md), [task_7.md](task_7.md), and [task_8.md](task_8.md). Fully completed files/sections are omitted. See [MVP.md](MVP.md) for the prioritized MVP-scoped subset with additional MVP-specific requirements (chat direction reversal, chat lock-on-contract).
+> Collects unimplemented / partially implemented work from [task.md](task.md) through [task_8.md](task_8.md). The authoritative MVP requirements and ship checklist are in [PRODUCT_PLAN.md](PRODUCT_PLAN.md).
 
 `task.md`, `task_2.md`, and `task_6.md` are fully complete — no open items.
 
@@ -63,8 +63,9 @@
 
 ## Cross-Cutting Items (not tied to a single task file, but flagged during MVP review)
 
-- [ ] Chat initiation direction: reverse so only employees/workers can start a new conversation (see [MVP.md](MVP.md) §1) — currently the opposite is enforced in both `firestore.ts` and `firestore.rules`.
-- [ ] Lock/disable chat once a contract is accepted by both parties, without deleting message history (see [MVP.md](MVP.md) §2) — not implemented anywhere in the codebase currently.
-- [ ] `.env.local.example` file is missing from the repo root.
+- [x] Employer-only chat initiation is enforced in the app and Firestore rules; employees can reply in an existing thread.
+- [x] Chat is locked after contract acceptance without deleting its message history.
+- [x] `.env.local.example` exists at the repository root.
+- [x] One review per contract participant is enforced by deterministic Firestore review document IDs and create-only rules (see [PRODUCT_PLAN.md](PRODUCT_PLAN.md)).
 - [ ] No automated tests exist anywhere in the repo (unit, integration, or Firestore rules tests).
 - [ ] No CI pipeline exists.
