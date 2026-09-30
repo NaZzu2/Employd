@@ -733,50 +733,12 @@ export async function submitReview(review: Omit<Review, 'id' | 'createdAt'>): Pr
     throw new Error('Your plan only allows awarding 1 badge per review.');
   }
 
-  const batch = writeBatch(db);
-
-  // Add review document
-  const reviewRef = doc(collection(db, 'reviews'));
-  batch.set(reviewRef, { ...review, createdAt: new Date().toISOString() });
-
-  // Update recipient's stats on their user doc
-  const toRef = doc(db, 'users', review.toUid);
-  const toSnap = await getDoc(toRef);
-  if (toSnap.exists()) {
-    const toData = toSnap.data() as { averageRating: number; reviewCount: number };
-    const newCount = toData.reviewCount + 1;
-    const newAvg =
-      (toData.averageRating * toData.reviewCount + review.stars) / newCount;
-    batch.update(toRef, { averageRating: newAvg, reviewCount: newCount });
-
-    // Loop through all awarded badges and increment on UserDoc
-    badgesAwarded.forEach((b) => {
-      batch.update(toRef, {
-        [`badgeCounts.${b}`]: increment(1),
-      });
-    });
-  }
-
-  // Mirror stats on role-specific profile doc
-  const profileCollection =
-    review.fromRole === 'employer' ? 'workerProfiles' : 'employerProfiles';
-  const profileRef = doc(db, profileCollection, review.toUid);
-  const profileSnap = await getDoc(profileRef);
-  if (profileSnap.exists()) {
-    const pd = profileSnap.data() as { averageRating: number; reviewCount: number };
-    const newCount = pd.reviewCount + 1;
-    const newAvg = (pd.averageRating * pd.reviewCount + review.stars) / newCount;
-    batch.update(profileRef, { averageRating: newAvg, reviewCount: newCount });
-    
-    // Loop through all awarded badges and increment on ProfileDoc
-    badgesAwarded.forEach((b) => {
-      batch.update(profileRef, {
-        [`badgeCounts.${b}`]: increment(1),
-      });
-    });
-  }
-
-  await batch.commit();
+  // Recipient aggregates are protected from client writes and updated by the
+  // Firebase Admin review trigger after this document is created.
+  await addDoc(collection(db, 'reviews'), {
+    ...review,
+    createdAt: new Date().toISOString(),
+  });
 }
 
 /** Returns how many badges a user has already awarded in reviews for a given contract */
